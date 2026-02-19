@@ -216,6 +216,7 @@ canvas{display:block;width:100%}
   <button class="tab" onclick="switchTab('insights',this)">Insights</button>
   <button class="tab" onclick="switchTab('history',this)">History</button>
   <button class="tab" onclick="switchTab('reminders',this)">Reminders</button>
+  <button class="tab" onclick="switchTab('settings',this)">⚙️</button>
 </div>
 
 <!-- DASHBOARD -->
@@ -355,6 +356,33 @@ canvas{display:block;width:100%}
   </div>
 </div>
 
+<!-- SETTINGS -->
+<div class="section" id="tab-settings">
+  <div class="form-card">
+    <div class="section-title">📤 Export Your Data</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Downloads all your debts, budget, history and reminders as a <strong style="color:var(--text)">.json</strong> file. Use this to back up your data or move it to a new browser/device.</p>
+    <button class="btn" onclick="exportData()">⬇️ Download Backup</button>
+  </div>
+
+  <div class="form-card">
+    <div class="section-title">📥 Import Data</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Load a backup file exported from this app. <strong style="color:var(--accent2)">This will overwrite your current data</strong> — export first if you want to keep it.</p>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <label class="btn btn-ghost" style="cursor:pointer">
+        📂 Choose File
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
+      </label>
+      <span id="import-filename" style="font-size:12px;color:var(--muted)">No file chosen</span>
+    </div>
+  </div>
+
+  <div class="form-card" style="border-color:rgba(255,107,107,.2)">
+    <div class="section-title" style="color:var(--accent2)">⚠️ Danger Zone</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Permanently delete all your data from this browser. Cannot be undone — export a backup first.</p>
+    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+  </div>
+</div>
+
 <!-- PAYMENT MODAL -->
 <div class="modal-overlay" id="pay-modal">
   <div class="modal">
@@ -430,6 +458,7 @@ function switchTab(name,btn){
   if(name==='insights')  renderInsights();
   if(name==='history')   renderHistory();
   if(name==='reminders') renderReminders();
+  if(name==='settings')  {} // static, nothing to render
 }
 
 // ═══════════════════════════════════════════
@@ -1148,6 +1177,80 @@ function renderReminders(){
   renderCustomReminders();
 }
 function fmtDate(str){const d=new Date(str+'T00:00:00');return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}
+
+// ═══════════════════════════════════════════
+// EXPORT / IMPORT / CLEAR
+//
+// Export: bundles all localStorage data into
+// a JSON file and triggers a download.
+// Import: reads a JSON file back in, writes
+// it to localStorage, then reloads the page.
+// Clear: wipes localStorage and reloads.
+//
+// JSON (JavaScript Object Notation) is just
+// a text format for storing structured data —
+// like a spreadsheet but for code. It's what
+// localStorage already uses internally.
+// ═══════════════════════════════════════════
+function exportData() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    debts:     load('debts',    []),
+    history:   load('history',  []),
+    reminders: load('reminders',[]),
+    budget:    load('budget',   {})
+  };
+
+  // Create a download link in memory and click it
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `debt-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded!');
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('import-filename').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+
+      // Validate it looks like our data
+      if (!data.debts && !data.budget) {
+        toast('File doesn\'t look like a valid backup.', true);
+        return;
+      }
+
+      if (!confirm(`Import data from "${file.name}"? This will overwrite your current data.`)) return;
+
+      if (data.debts)     save('debts',     data.debts);
+      if (data.history)   save('history',   data.history);
+      if (data.reminders) save('reminders', data.reminders);
+      if (data.budget)    save('budget',    data.budget);
+
+      toast('Data imported! Reloading...');
+      setTimeout(() => location.reload(), 1200);
+    } catch {
+      toast('Could not read file — make sure it\'s a valid backup.', true);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('Delete ALL data permanently? This cannot be undone.\n\nExport a backup first if you want to keep anything.')) return;
+  ['debts','history','reminders','budget'].forEach(k => localStorage.removeItem(k));
+  toast('All data cleared. Reloading...');
+  setTimeout(() => location.reload(), 1200);
+}
 
 // ═══════════════════════════════════════════
 // HELPERS
