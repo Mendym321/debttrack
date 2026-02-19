@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debt Freedom Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --surface:#12121a; --card:#1a1a26; --border:#2a2a3f;
+  --accent:#00e5a0; --accent2:#ff6b6b; --accent3:#ffd166;
+  --text:#e8e8f0; --muted:#6b6b8a; --glow:0 0 20px rgba(0,229,160,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.container{max-width:940px;margin:0 auto;padding:32px 20px 80px;position:relative;z-index:1}
+
+header{margin-bottom:36px;animation:fadeDown .6s ease both}
+.header-eyebrow{font-size:11px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+header h1{font-family:'Syne',sans-serif;font-size:clamp(26px,5vw,44px);font-weight:800;line-height:1.1;background:linear-gradient(135deg,#fff 30%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+header p{color:var(--muted);font-size:13px;margin-top:8px}
+
+.tabs{display:flex;gap:3px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:28px;animation:fadeDown .6s .1s ease both}
+.tab{flex:1;min-width:70px;background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:9px 6px;border-radius:8px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.tab.active{background:var(--card);color:var(--accent);border:1px solid var(--border);box-shadow:var(--glow)}
+
+.section{display:none}
+.section.active{display:block;animation:fadeUp .4s ease both}
+
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent)}
+.stat-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stat-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--accent)}
+.stat-value.danger{color:var(--accent2)} .stat-value.warning{color:var(--accent3)}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+
+.section-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:22px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+input,select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:9px 12px;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,160,.1)}
+select option{background:var(--bg)}
+
+.btn{background:var(--accent);color:#000;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;padding:11px 22px;cursor:pointer;text-transform:uppercase;transition:all .2s;display:inline-block}
+.btn:hover{background:#00ffb3;transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,229,160,.3)}
+.btn-sm{padding:6px 13px;font-size:11px;border-radius:6px}
+.btn-danger{background:var(--accent2);color:#fff} .btn-danger:hover{background:#ff8585;box-shadow:0 4px 20px rgba(255,107,107,.3)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)} .btn-ghost:hover{border-color:var(--accent);color:var(--accent);background:transparent;box-shadow:none;transform:none}
+.btn-warn{background:var(--accent3);color:#000} .btn-warn:hover{background:#ffe08a;box-shadow:0 4px 20px rgba(255,209,102,.3)}
+
+.debt-item{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:10px;transition:border-color .2s,transform .2s;animation:fadeUp .3s ease both}
+.debt-item:hover{transform:translateX(2px)}
+.debt-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:6px}
+.debt-name{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+.debt-type{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);background:var(--bg);padding:3px 8px;border-radius:20px;border:1px solid var(--border)}
+.debt-numbers{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px}
+.debt-num-label{font-size:10px;color:var(--muted);letter-spacing:1px}
+.debt-num-value{font-size:14px;font-weight:500}
+.debt-num-value.red{color:var(--accent2)}
+.progress-wrap{margin-bottom:10px}
+.progress-info{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px}
+.progress-bar{height:6px;background:var(--bg);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
+.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),#00c9f0);transition:width .8s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
+.progress-fill::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:shimmer 2s infinite}
+.debt-actions{display:flex;gap:7px;flex-wrap:wrap}
+
+/* Modals */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(6px);z-index:9000;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:420px;animation:scaleIn .25s ease both}
+.modal.wide{max-width:560px}
+.modal h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:5px}
+.modal p{color:var(--muted);font-size:12px;margin-bottom:18px}
+.modal-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+
+/* Plan */
+.plan-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:14px}
+.plan-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.plan-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.plan-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:20px;border:1px solid}
+.plan-badge.avalanche{color:#00e5a0;border-color:#00e5a0;background:rgba(0,229,160,.05)}
+.plan-badge.snowball{color:#ffd166;border-color:#ffd166;background:rgba(255,209,102,.05)}
+.plan-step{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.plan-step:last-child{border-bottom:none}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-name{font-size:13px;flex:1}
+.step-detail{font-size:11px;color:var(--muted)}
+
+/* History & Reminders */
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);font-size:12px;animation:fadeUp .3s ease both}
+.history-item:last-child{border-bottom:none}
+.history-debt{color:var(--text)} .history-date{color:var(--muted)} .history-amount{color:var(--accent);font-weight:500}
+.reminder-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent3);border-radius:16px;padding:14px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.reminder-text{font-size:13px} .reminder-date{font-size:11px;color:var(--muted);margin-top:2px}
+.reminder-del{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer} .reminder-del:hover{color:var(--accent2)}
+
+.notif-banner{border-radius:12px;padding:14px 18px;font-size:13px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px}
+.notif-on{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);color:var(--accent)}
+.notif-on strong{color:var(--accent)}
+.notif-ask{background:rgba(0,201,240,.07);border:1px solid rgba(0,201,240,.2);color:var(--text)}
+.notif-off{background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.2);color:var(--accent2)}
+.notif-unsupported{background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.2);color:var(--accent3)}
+
+/* Auto reminder cards */
+.auto-reminder-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.auto-reminder-card.due-soon{border-color:var(--accent3);border-left:3px solid var(--accent3)}
+.auto-reminder-card.due-today{border-color:var(--accent2);border-left:3px solid var(--accent2);background:rgba(255,107,107,.04)}
+.auto-reminder-card.overdue{border-color:var(--accent2);border-left:3px solid var(--accent2);background:rgba(255,107,107,.07)}
+.auto-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid;flex-shrink:0}
+.auto-badge.ok{color:var(--accent);border-color:var(--accent)}
+.auto-badge.soon{color:var(--accent3);border-color:var(--accent3)}
+.auto-badge.today{color:var(--accent2);border-color:var(--accent2)}
+.auto-badge.overdue{color:var(--accent2);border-color:var(--accent2)}
+.auto-debt-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;flex:1}
+.auto-debt-detail{font-size:11px;color:var(--muted);margin-top:2px}
+.auto-days{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--accent);text-align:right;flex-shrink:0}
+.auto-days.warn{color:var(--accent3)} .auto-days.urgent{color:var(--accent2)}
+.auto-days-label{font-size:10px;color:var(--muted);text-align:right}
+
+/* Budget */
+.budget-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+@media(max-width:640px){.budget-layout{grid-template-columns:1fr}}
+.budget-col-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.expense-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.expense-row input{flex:1;padding:7px 10px;font-size:12px}
+.expense-row input.amt-input{max-width:86px}
+.del-btn{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;flex-shrink:0;line-height:1} .del-btn:hover{color:var(--accent2)}
+.budget-result{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:16px}
+.budget-result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px}
+.budget-num-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.budget-num-value{font-family:'Syne',sans-serif;font-size:22px;font-weight:700}
+.budget-num-value.green{color:var(--accent)} .budget-num-value.red{color:var(--accent2)} .budget-num-value.yellow{color:var(--accent3)}
+.budget-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.budget-bar-label{font-size:11px;color:var(--muted);width:86px;flex-shrink:0}
+.budget-bar-track{flex:1;height:10px;background:var(--bg);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
+.budget-bar-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.budget-bar-pct{font-size:11px;color:var(--muted);width:34px;text-align:right;flex-shrink:0}
+.budget-advice{background:rgba(0,229,160,.04);border:1px solid rgba(0,229,160,.15);border-radius:12px;padding:16px;margin-bottom:12px}
+.budget-advice-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.budget-advice p{font-size:13px;line-height:1.7;color:var(--muted)}
+.budget-advice p strong{color:var(--text)}
+.scenario-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.scenario-card{flex:1;min-width:130px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:border-color .2s,transform .2s}
+.scenario-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.scenario-card.highlight{border-color:var(--accent);background:rgba(0,229,160,.05)}
+.scenario-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.scenario-extra{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--accent)}
+.scenario-payoff{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* Insights */
+.insight-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;animation:fadeUp .3s ease both}
+.insight-icon{font-size:22px;flex-shrink:0;margin-top:1px}
+.insight-body{}
+.insight-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:4px}
+.insight-text{font-size:12px;color:var(--muted);line-height:1.65}
+.insight-text strong{color:var(--text)}
+.insight-card.good{border-left:3px solid var(--accent)}
+.insight-card.warn{border-left:3px solid var(--accent3)}
+.insight-card.bad{border-left:3px solid var(--accent2)}
+.insight-card.info{border-left:3px solid #00c9f0}
+.insight-action{display:inline-block;margin-top:8px;font-size:11px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;cursor:default}
+
+/* Charts */
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:18px}
+.chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.chart-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:3px}
+.chart-sub{font-size:11px;color:var(--muted);margin-bottom:14px}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+@media(max-width:580px){.charts-row{grid-template-columns:1fr}}
+canvas{display:block;width:100%}
+.donut-wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.donut-wrap canvas{width:150px!important;height:150px!important;flex-shrink:0}
+#donut-legend{flex:1;min-width:90px}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:11px;margin-bottom:5px;color:var(--text)}
+.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.timeline-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.timeline-label{font-size:12px;width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timeline-bar-wrap{flex:1;background:var(--bg);border-radius:99px;height:22px;border:1px solid var(--border);overflow:hidden}
+.timeline-bar-fill{height:100%;border-radius:99px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;color:#000;white-space:nowrap;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.timeline-date{font-size:11px;color:var(--muted);width:88px;text-align:right;flex-shrink:0}
+
+.empty{text-align:center;padding:44px 20px;color:var(--muted);font-size:13px}
+.empty-icon{font-size:34px;margin-bottom:10px;opacity:.4}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:11px 18px;border-radius:10px;z-index:9999;transform:translateY(100px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+
+@keyframes fadeDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes shimmer{to{left:200%}}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="header-eyebrow">// your path to zero</div>
+  <h1>Debt Freedom<br>Tracker</h1>
+  <p>Track every dollar. Plan every payoff. Celebrate every win.</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('dashboard',this)">Dashboard</button>
+  <button class="tab" onclick="switchTab('debts',this)">My Debts</button>
+  <button class="tab" onclick="switchTab('budget',this)">Budget</button>
+  <button class="tab" onclick="switchTab('plan',this)">Plan</button>
+  <button class="tab" onclick="switchTab('charts',this)">Charts</button>
+  <button class="tab" onclick="switchTab('insights',this)">Insights</button>
+  <button class="tab" onclick="switchTab('history',this)">History</button>
+  <button class="tab" onclick="switchTab('reminders',this)">Reminders</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="section active" id="tab-dashboard">
+  <div class="summary-grid" id="summary-grid"></div>
+  <div class="section-title">Debt Breakdown</div>
+  <div id="dashboard-debts"></div>
+</div>
+
+<!-- MY DEBTS -->
+<div class="section" id="tab-debts">
+  <div class="form-card">
+    <div class="section-title">Add a Debt</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Debt Name</label><input type="text" id="debt-name" placeholder="e.g. Visa Card"></div>
+      <div class="form-group"><label>Type</label>
+        <select id="debt-type"><option>Credit Card</option><option>Student Loan</option><option>Car Loan</option><option>Personal Loan</option><option>Medical Bill</option><option>Mortgage</option><option>Other</option></select>
+      </div>
+      <div class="form-group"><label>Total Balance ($)</label><input type="number" id="debt-balance" placeholder="5000" min="0"></div>
+      <div class="form-group"><label>Interest Rate / APR (%)</label><input type="number" id="debt-rate" placeholder="18.9" step="0.1" min="0"></div>
+      <div class="form-group"><label>Min. Payment ($)</label><input type="number" id="debt-min" placeholder="50" min="0"></div>
+      <div class="form-group"><label>Due Day (1–28)</label><input type="number" id="debt-due" placeholder="15" min="1" max="28"></div>
+    </div>
+    <button class="btn" onclick="addDebt()">+ Add Debt</button>
+  </div>
+  <div class="section-title">Your Debts</div>
+  <div id="debt-list"></div>
+</div>
+
+<!-- BUDGET -->
+<div class="section" id="tab-budget">
+  <div class="form-card">
+    <div class="section-title">Monthly Income</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Take-Home Pay (after tax)</label><input type="number" id="income-main" placeholder="3500" min="0" oninput="saveBudgetIncome();renderBudget()"></div>
+      <div class="form-group"><label>Side Income / Other</label><input type="number" id="income-side" placeholder="0" min="0" oninput="saveBudgetIncome();renderBudget()"></div>
+    </div>
+  </div>
+  <div class="budget-layout">
+    <div class="form-card">
+      <div class="budget-col-title">🔒 Fixed Expenses <span style="font-size:10px;color:var(--muted);font-weight:400">(same every month)</span></div>
+      <div id="fixed-expenses-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input type="text" id="fixed-new-name" placeholder="e.g. Rent" style="flex:1;padding:7px 10px;font-size:12px">
+        <input type="number" id="fixed-new-amt" placeholder="$" min="0" style="width:78px;padding:7px 10px;font-size:12px">
+        <button class="btn btn-sm" onclick="addExpense('fixed')">+</button>
+      </div>
+    </div>
+    <div class="form-card">
+      <div class="budget-col-title">📊 Variable Expenses <span style="font-size:10px;color:var(--muted);font-weight:400">(estimates ok)</span></div>
+      <div id="variable-expenses-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input type="text" id="var-new-name" placeholder="e.g. Groceries" style="flex:1;padding:7px 10px;font-size:12px">
+        <input type="number" id="var-new-amt" placeholder="$" min="0" style="width:78px;padding:7px 10px;font-size:12px">
+        <button class="btn btn-sm" onclick="addExpense('variable')">+</button>
+      </div>
+    </div>
+  </div>
+  <div id="budget-output"></div>
+</div>
+
+<!-- PLAN -->
+<div class="section" id="tab-plan">
+  <div class="form-card">
+    <div class="section-title">Payoff Strategy</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Extra Monthly Budget ($)</label><input type="number" id="extra-budget" placeholder="200" min="0" oninput="renderPlan()"></div>
+      <div class="form-group"><label>Strategy</label>
+        <select id="strategy" onchange="renderPlan()">
+          <option value="avalanche">Avalanche (highest interest first)</option>
+          <option value="snowball">Snowball (smallest balance first)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div id="plan-output"></div>
+</div>
+
+<!-- CHARTS -->
+<div class="section" id="tab-charts">
+  <div class="chart-card">
+    <div class="chart-header">
+      <div><div class="chart-title">Total Debt Over Time</div><div class="chart-sub">Projected payoff simulation</div></div>
+      <div>
+        <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Extra/mo ($)</label>
+        <input type="number" id="chart-extra" placeholder="0" min="0" style="width:86px;padding:6px 10px;font-size:12px" oninput="renderCharts()">
+      </div>
+    </div>
+    <canvas id="chart-line" height="220"></canvas>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Debt Breakdown</div><div class="chart-sub">Balance by debt</div>
+      <div class="donut-wrap"><canvas id="chart-donut" width="200" height="200"></canvas><div id="donut-legend"></div></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Monthly Payments</div><div class="chart-sub">Min payment per debt</div>
+      <canvas id="chart-bar" height="200"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Payoff Timeline</div><div class="chart-sub">Estimated date each debt is eliminated</div>
+    <div id="payoff-timeline"></div>
+  </div>
+</div>
+
+<!-- INSIGHTS -->
+<div class="section" id="tab-insights">
+  <p style="font-size:12px;color:var(--muted);margin-bottom:20px">Based on your debts and budget. Insights update automatically as you add data.</p>
+  <div id="insights-output"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="section" id="tab-history">
+  <div class="form-card" id="history-list"><div class="section-title">Payment History</div></div>
+</div>
+
+<!-- REMINDERS -->
+<div class="section" id="tab-reminders">
+  <div id="notif-status" style="margin-bottom:20px"></div>
+
+  <!-- Auto reminders from debts -->
+  <div class="section-title">🔁 Monthly Debt Due Dates</div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Auto-generated from the due day you set on each debt. Updates every month automatically — nothing to configure.</p>
+  <div id="auto-reminder-list"></div>
+
+  <div style="margin-top:28px">
+    <div class="section-title">📌 Custom One-Off Reminders</div>
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group"><label>Reminder Note</label><input type="text" id="reminder-text" placeholder="e.g. Call bank about rate reduction"></div>
+        <div class="form-group"><label>Date</label><input type="date" id="reminder-date"></div>
+      </div>
+      <button class="btn" onclick="addReminder()">+ Add Reminder</button>
+    </div>
+    <div id="reminder-list"></div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="pay-modal">
+  <div class="modal">
+    <h3 id="modal-pay-title">Make a Payment</h3>
+    <p id="modal-pay-sub"></p>
+    <div class="form-group"><label>Payment Amount ($)</label><input type="number" id="pay-amount" placeholder="Enter amount" min="0"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="confirmPayment()">Confirm Payment</button>
+      <button class="btn btn-ghost" onclick="closeModal('pay-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal wide">
+    <h3>✏️ Edit Debt</h3>
+    <p>Change any fields and hit Save. Payment history stays intact.</p>
+    <div class="form-grid">
+      <div class="form-group"><label>Debt Name</label><input type="text" id="edit-name"></div>
+      <div class="form-group"><label>Type</label>
+        <select id="edit-type"><option>Credit Card</option><option>Student Loan</option><option>Car Loan</option><option>Personal Loan</option><option>Medical Bill</option><option>Mortgage</option><option>Other</option></select>
+      </div>
+      <div class="form-group"><label>Current Balance ($)</label><input type="number" id="edit-balance" min="0"></div>
+      <div class="form-group"><label>Interest Rate / APR (%)</label><input type="number" id="edit-rate" step="0.1" min="0"></div>
+      <div class="form-group"><label>Min. Payment ($)</label><input type="number" id="edit-min" min="0"></div>
+      <div class="form-group"><label>Due Day (1–28)</label><input type="number" id="edit-due" min="1" max="28"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="saveEdit()">Save Changes</button>
+      <button class="btn btn-ghost" onclick="closeModal('edit-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.container -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA — localStorage persistence
+// ═══════════════════════════════════════════
+function load(key,fb){try{const v=JSON.parse(localStorage.getItem(key));return v!==null?v:fb}catch{return fb}}
+function save(key,val){localStorage.setItem(key,JSON.stringify(val))}
+
+let debts     = load('debts',[]);
+let history   = load('history',[]);
+let reminders = load('reminders',[]);
+let budget    = load('budget',{
+  income:{main:'',side:''},
+  fixed:   [{name:'Rent/Mortgage',amt:0},{name:'Utilities',amt:0},{name:'Insurance',amt:0},{name:'Phone',amt:0}],
+  variable:[{name:'Groceries',amt:0},{name:'Transport/Gas',amt:0},{name:'Dining Out',amt:0},{name:'Entertainment',amt:0}]
+});
+
+let payingId=null, editingId=null;
+
+// ═══════════════════════════════════════════
+// TABS
+// KEY FIX: pass `this` (the button) so we
+// never rely on the global `event` object.
+// That was the root cause of the edit bug.
+// ═══════════════════════════════════════════
+function switchTab(name,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='dashboard') renderDashboard();
+  if(name==='debts')     renderDebtList();
+  if(name==='budget')    {renderExpenseLists();renderBudget();}
+  if(name==='plan')      renderPlan();
+  if(name==='charts')    renderCharts();
+  if(name==='insights')  renderInsights();
+  if(name==='history')   renderHistory();
+  if(name==='reminders') renderReminders();
+}
+
+// ═══════════════════════════════════════════
+// MODALS — clean, simple open/close
+// ═══════════════════════════════════════════
+function openModal(id) {document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+// click outside to close
+document.addEventListener('click',e=>{
+  if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+});
+
+// ═══════════════════════════════════════════
+// ADD DEBT
+// ═══════════════════════════════════════════
+function addDebt(){
+  const name=document.getElementById('debt-name').value.trim();
+  const type=document.getElementById('debt-type').value;
+  const balance=parseFloat(document.getElementById('debt-balance').value);
+  const rate=parseFloat(document.getElementById('debt-rate').value);
+  const min=parseFloat(document.getElementById('debt-min').value);
+  const due=parseInt(document.getElementById('debt-due').value)||1;
+  if(!name||isNaN(balance)||isNaN(rate)||isNaN(min)){toast('Please fill in all fields.',true);return}
+  debts.push({id:Date.now(),name,type,originalBalance:balance,balance,rate,min,due,paid:0});
+  save('debts',debts);
+  ['debt-name','debt-balance','debt-rate','debt-min','debt-due'].forEach(id=>document.getElementById(id).value='');
+  renderDebtList();
+  toast('Debt added!');
+}
+
+// ═══════════════════════════════════════════
+// RENDER DEBT LIST
+// ═══════════════════════════════════════════
+function renderDebtList(){
+  const el=document.getElementById('debt-list');
+  if(!debts.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div>No debts yet. Add your first one above.</div>`;return}
+  el.innerHTML=debts.map(d=>debtCard(d,true)).join('');
+}
+
+function debtCard(d,showActions){
+  const pct=Math.min(100,Math.round((d.paid/(d.originalBalance||1))*100));
+  const interest=((d.balance*d.rate/100)/12).toFixed(2);
+  return `
+  <div class="debt-item">
+    <div class="debt-header"><div class="debt-name">${d.name}</div><span class="debt-type">${d.type}</span></div>
+    <div class="debt-numbers">
+      <div class="debt-num"><div class="debt-num-label">Balance</div><div class="debt-num-value red">$${fmt(d.balance)}</div></div>
+      <div class="debt-num"><div class="debt-num-label">Interest/mo</div><div class="debt-num-value">$${interest}</div></div>
+      <div class="debt-num"><div class="debt-num-label">Min Payment</div><div class="debt-num-value">$${d.min}</div></div>
+      <div class="debt-num"><div class="debt-num-label">APR</div><div class="debt-num-value">${d.rate}%</div></div>
+      <div class="debt-num"><div class="debt-num-label">Due Day</div><div class="debt-num-value">Day ${d.due}</div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-info"><span>Paid off: ${pct}%</span><span>$${fmt(d.paid)} paid</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    ${showActions?`<div class="debt-actions">
+      <button class="btn btn-sm" onclick="openPayModal(${d.id})">+ Payment</button>
+      <button class="btn btn-sm btn-warn" onclick="openEditModal(${d.id})">✏️ Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteDebt(${d.id})">Delete</button>
+    </div>`:''}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+// PAYMENT MODAL
+// ═══════════════════════════════════════════
+function openPayModal(id){
+  payingId=id;
+  const d=debts.find(x=>x.id===id);
+  document.getElementById('modal-pay-title').textContent=`Pay: ${d.name}`;
+  document.getElementById('modal-pay-sub').textContent=`Balance: $${fmt(d.balance)}  ·  Min: $${d.min}`;
+  document.getElementById('pay-amount').value=d.min;
+  openModal('pay-modal');
+}
+function confirmPayment(){
+  const amount=parseFloat(document.getElementById('pay-amount').value);
+  if(!amount||amount<=0){toast('Enter a valid amount.',true);return}
+  const d=debts.find(x=>x.id===payingId);
+  const actual=Math.min(amount,d.balance);
+  d.balance=Math.max(0,d.balance-actual);
+  d.paid+=actual;
+  history.unshift({id:Date.now(),debtName:d.name,amount:actual,date:new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})});
+  save('debts',debts); save('history',history);
+  closeModal('pay-modal');
+  renderDebtList();
+  toast(d.balance===0?`🎉 ${d.name} is PAID OFF!`:`Payment of $${actual.toFixed(2)} recorded!`);
+}
+
+// ═══════════════════════════════════════════
+// EDIT MODAL
+// THE FIX: the edit modal is now INSIDE
+// .container, and openModal/closeModal work
+// correctly. Before, the modal was outside
+// the container div — it existed in the DOM
+// but the CSS z-index and display rules
+// weren't applying correctly.
+// ═══════════════════════════════════════════
+function openEditModal(id){
+  editingId=id;
+  const d=debts.find(x=>x.id===id);
+  document.getElementById('edit-name').value=d.name;
+  document.getElementById('edit-type').value=d.type;
+  document.getElementById('edit-balance').value=d.balance;
+  document.getElementById('edit-rate').value=d.rate;
+  document.getElementById('edit-min').value=d.min;
+  document.getElementById('edit-due').value=d.due;
+  openModal('edit-modal');
+}
+function saveEdit(){
+  const name=document.getElementById('edit-name').value.trim();
+  const type=document.getElementById('edit-type').value;
+  const balance=parseFloat(document.getElementById('edit-balance').value);
+  const rate=parseFloat(document.getElementById('edit-rate').value);
+  const min=parseFloat(document.getElementById('edit-min').value);
+  const due=parseInt(document.getElementById('edit-due').value)||1;
+  if(!name||isNaN(balance)||isNaN(rate)||isNaN(min)){toast('Fill in all fields.',true);return}
+  const d=debts.find(x=>x.id===editingId);
+  d.name=name; d.type=type; d.balance=balance; d.rate=rate; d.min=min; d.due=due;
+  // Note: d.paid and d.originalBalance stay the same — they track history
+  save('debts',debts);
+  closeModal('edit-modal');
+  renderDebtList();
+  toast('Debt updated!');
+}
+function deleteDebt(id){
+  if(!confirm('Delete this debt? Cannot be undone.'))return;
+  debts=debts.filter(d=>d.id!==id);
+  save('debts',debts);
+  renderDebtList(); renderDashboard();
+  toast('Debt removed.');
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════
+function renderDashboard(){
+  const total=debts.reduce((s,d)=>s+d.balance,0);
+  const origTotal=debts.reduce((s,d)=>s+d.originalBalance,0);
+  const totalPaid=debts.reduce((s,d)=>s+d.paid,0);
+  const interest=debts.reduce((s,d)=>s+(d.balance*d.rate/100/12),0);
+  const pct=origTotal>0?Math.round((totalPaid/origTotal)*100):0;
+  document.getElementById('summary-grid').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total Debt Left</div><div class="stat-value danger">$${Math.round(total).toLocaleString()}</div><div class="stat-sub">${debts.length} active debt${debts.length!==1?'s':''}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Paid Off</div><div class="stat-value">$${Math.round(totalPaid).toLocaleString()}</div><div class="stat-sub">${pct}% of original debt</div></div>
+    <div class="stat-card"><div class="stat-label">Monthly Interest</div><div class="stat-value warning">$${interest.toFixed(0)}</div><div class="stat-sub">Cost of delay per month</div></div>
+    <div class="stat-card"><div class="stat-label">Min. Payments/mo</div><div class="stat-value">$${debts.reduce((s,d)=>s+d.min,0).toLocaleString()}</div><div class="stat-sub">across all debts</div></div>`;
+  const el=document.getElementById('dashboard-debts');
+  el.innerHTML=debts.length?debts.map(d=>debtCard(d,false)).join(''):`<div class="empty"><div class="empty-icon">🏦</div>Add your debts in the "My Debts" tab to get started.</div>`;
+}
+
+// ═══════════════════════════════════════════
+// BUDGET PLANNER
+// ═══════════════════════════════════════════
+function saveBudgetIncome(){
+  budget.income.main=parseFloat(document.getElementById('income-main').value)||0;
+  budget.income.side=parseFloat(document.getElementById('income-side').value)||0;
+  save('budget',budget);
+}
+function renderExpenseLists(){
+  document.getElementById('income-main').value=budget.income.main||'';
+  document.getElementById('income-side').value=budget.income.side||'';
+  renderExpCat('fixed'); renderExpCat('variable');
+}
+function renderExpCat(type){
+  const list=type==='fixed'?budget.fixed:budget.variable;
+  const cid=type==='fixed'?'fixed-expenses-list':'variable-expenses-list';
+  document.getElementById(cid).innerHTML=list.map((item,i)=>`
+    <div class="expense-row">
+      <input type="text" value="${item.name}" placeholder="Name" onchange="updateExp('${type}',${i},'name',this.value)">
+      <input type="number" class="amt-input" value="${item.amt||''}" placeholder="$" min="0" onchange="updateExp('${type}',${i},'amt',this.value)" oninput="renderBudget()">
+      <button class="del-btn" onclick="removeExp('${type}',${i})">×</button>
+    </div>`).join('');
+}
+function updateExp(type,i,field,val){
+  const list=type==='fixed'?budget.fixed:budget.variable;
+  list[i][field]=field==='amt'?parseFloat(val)||0:val;
+  save('budget',budget); renderBudget();
+}
+function removeExp(type,i){
+  if(type==='fixed')budget.fixed.splice(i,1);else budget.variable.splice(i,1);
+  save('budget',budget); renderExpCat(type); renderBudget();
+}
+function addExpense(type){
+  const nid=type==='fixed'?'fixed-new-name':'var-new-name';
+  const aid=type==='fixed'?'fixed-new-amt':'var-new-amt';
+  const name=document.getElementById(nid).value.trim();
+  const amt=parseFloat(document.getElementById(aid).value)||0;
+  if(!name){toast('Enter an expense name.',true);return}
+  if(type==='fixed')budget.fixed.push({name,amt});else budget.variable.push({name,amt});
+  document.getElementById(nid).value=''; document.getElementById(aid).value='';
+  save('budget',budget); renderExpCat(type); renderBudget();
+}
+
+function estPayoffMonths(extra){
+  let sim=debts.map(d=>({...d}));
+  for(let m=0;m<360;m++){
+    let eLeft=extra;
+    sim=sim.map(d=>{
+      if(d.balance<=0)return d;
+      d.balance=Math.max(0,d.balance+(d.balance*d.rate/100/12)-d.min-eLeft);
+      eLeft=0; return d;
+    });
+    if(sim.every(d=>d.balance<=0))return m+1;
+  }
+  return 360;
+}
+
+function renderBudget(){
+  saveBudgetIncome();
+  const totalIncome=budget.income.main+budget.income.side;
+  const totalFixed=budget.fixed.reduce((s,x)=>s+(parseFloat(x.amt)||0),0);
+  const totalVariable=budget.variable.reduce((s,x)=>s+(parseFloat(x.amt)||0),0);
+  const debtMins=debts.reduce((s,d)=>s+d.min,0);
+  const totalOut=totalFixed+totalVariable+debtMins;
+  const leftover=totalIncome-totalOut;
+  const el=document.getElementById('budget-output');
+
+  if(!totalIncome){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">💰</div>Enter your take-home income above to see your full budget breakdown.</div>`;
+    return;
+  }
+
+  const pct=v=>totalIncome>0?Math.min(100,(v/totalIncome)*100):0;
+  const fixedPct=pct(totalFixed), varPct=pct(totalVariable), debtPct=pct(debtMins);
+  const leftoverPct=Math.min(100,Math.max(0,pct(leftover)));
+  const isOver=leftover<0;
+
+  // Payoff scenarios
+  const rawScenarios=[0,Math.max(0,Math.round(leftover*.25)),Math.max(0,Math.round(leftover*.5)),Math.max(0,Math.round(leftover))];
+  const scenarios=[...new Set(rawScenarios)].filter(n=>n>=0).slice(0,4);
+  const scenarioCards=scenarios.map((extra,i)=>{
+    const months=debts.length?estPayoffMonths(extra):0;
+    const dt=new Date(); dt.setMonth(dt.getMonth()+months);
+    const dateStr=months>=360?'30+ years':months===0?'No debts yet':dt.toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    const isLast=i===scenarios.length-1&&extra>0;
+    return `<div class="scenario-card ${isLast?'highlight':''}">
+      <div class="scenario-label">Extra/mo</div>
+      <div class="scenario-extra">$${extra}</div>
+      <div class="scenario-payoff">${debts.length?'Debt free ~'+dateStr:'Add debts to see'}</div>
+    </div>`;
+  }).join('');
+
+  let advice='';
+  if(isOver){
+    advice=`<strong>You're spending $${Math.abs(leftover).toFixed(0)} more than you earn.</strong> Before making extra debt payments you need to close this gap. Start with variable expenses — dining out, subscriptions, and entertainment are usually the easiest to cut without major lifestyle changes.`;
+  } else if(leftover<100){
+    advice=`You have <strong>$${leftover.toFixed(0)}/mo</strong> left — tight but workable. Even $25–50 extra toward your highest-interest debt each month compounds significantly over time. Look for any subscriptions you can cancel.`;
+  } else if(leftover<500){
+    advice=`You have <strong>$${leftover.toFixed(0)}/mo available</strong>. A solid rule: put <strong>50% toward extra debt payments</strong> and keep 50% as a buffer. That's $${Math.round(leftover*.5)}/mo extra — it could cut years off your payoff date.`;
+  } else {
+    advice=`You have strong breathing room at <strong>$${leftover.toFixed(0)}/mo leftover</strong>. You're in a great position to aggressively attack debt. Consider <strong>70–80%</strong> ($${Math.round(leftover*.75)}/mo) toward extra payments while keeping a small buffer for surprises.`;
+  }
+
+  el.innerHTML=`
+  <div class="budget-result">
+    <div class="section-title">Monthly Budget Breakdown</div>
+    <div class="budget-result-grid">
+      <div><div class="budget-num-label">Total Income</div><div class="budget-num-value green">$${totalIncome.toLocaleString()}</div></div>
+      <div><div class="budget-num-label">Fixed Expenses</div><div class="budget-num-value yellow">$${totalFixed.toLocaleString()}</div></div>
+      <div><div class="budget-num-label">Variable Expenses</div><div class="budget-num-value yellow">$${totalVariable.toLocaleString()}</div></div>
+      <div><div class="budget-num-label">Debt Minimums</div><div class="budget-num-value red">$${debtMins.toLocaleString()}</div></div>
+      <div><div class="budget-num-label">${isOver?'Over budget by':'Available for debt'}</div><div class="budget-num-value ${isOver?'red':'green'}">${isOver?'-':''}$${Math.abs(leftover).toFixed(0)}</div></div>
+    </div>
+    <div style="margin-bottom:20px">
+      <div class="budget-bar-row"><div class="budget-bar-label">Fixed</div><div class="budget-bar-track"><div class="budget-bar-fill" style="width:${fixedPct}%;background:#ffd166"></div></div><div class="budget-bar-pct">${fixedPct.toFixed(0)}%</div></div>
+      <div class="budget-bar-row"><div class="budget-bar-label">Variable</div><div class="budget-bar-track"><div class="budget-bar-fill" style="width:${varPct}%;background:#ff9a56"></div></div><div class="budget-bar-pct">${varPct.toFixed(0)}%</div></div>
+      <div class="budget-bar-row"><div class="budget-bar-label">Debt mins</div><div class="budget-bar-track"><div class="budget-bar-fill" style="width:${debtPct}%;background:#ff6b6b"></div></div><div class="budget-bar-pct">${debtPct.toFixed(0)}%</div></div>
+      <div class="budget-bar-row"><div class="budget-bar-label">Available</div><div class="budget-bar-track"><div class="budget-bar-fill" style="width:${leftoverPct}%;background:#00e5a0"></div></div><div class="budget-bar-pct">${leftoverPct.toFixed(0)}%</div></div>
+    </div>
+    <div class="section-title">What if you put your leftover toward debt?</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Four scenarios showing how extra payments change your payoff date:</p>
+    <div class="scenario-row">${scenarioCards}</div>
+  </div>
+  <div class="budget-advice">
+    <div class="budget-advice-title">💡 Recommendation</div>
+    <p>${advice}</p>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+// INSIGHTS ENGINE
+//
+// This is just logic: we look at all the
+// numbers you've entered, run them through
+// a set of financial "rules", and surface
+// findings as cards. Each insight has a
+// severity (good/warn/bad/info), a title,
+// and an explanation with concrete numbers.
+// ═══════════════════════════════════════════
+function renderInsights(){
+  const el=document.getElementById('insights-output');
+  const totalIncome=(budget.income.main||0)+(budget.income.side||0);
+  const totalFixed=budget.fixed.reduce((s,x)=>s+(parseFloat(x.amt)||0),0);
+  const totalVariable=budget.variable.reduce((s,x)=>s+(parseFloat(x.amt)||0),0);
+  const debtMins=debts.reduce((s,d)=>s+d.min,0);
+  const totalDebt=debts.reduce((s,d)=>s+d.balance,0);
+  const totalOut=totalFixed+totalVariable+debtMins;
+  const leftover=totalIncome-totalOut;
+  const monthlyInterest=debts.reduce((s,d)=>s+(d.balance*d.rate/100/12),0);
+  const hasIncome=totalIncome>0;
+  const hasDebts=debts.length>0;
+  const hasBudget=totalFixed>0||totalVariable>0;
+
+  if(!hasIncome&&!hasDebts){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🔍</div>Add your debts and budget info to unlock personalized insights.</div>`;
+    return;
+  }
+
+  const insights=[];
+
+  // ── DEBT-TO-INCOME RATIO ──────────────────
+  // Rule: monthly debt payments should be under 20% of income.
+  // Over 36% is the "danger zone" used by most lenders.
+  if(hasIncome&&hasDebts){
+    const dti=(debtMins/totalIncome)*100;
+    if(dti>36){
+      insights.push({type:'bad',icon:'🚨',title:`Debt payments are ${dti.toFixed(0)}% of your income`,
+        text:`Lenders consider anything over <strong>36%</strong> a serious risk. You're paying <strong>$${debtMins}/mo</strong> in minimums on a <strong>$${totalIncome.toLocaleString()}</strong> income. This leaves very little room for emergencies or extra payments. Reducing even one debt frees up significant cash flow.`,
+        action:'Focus on eliminating your smallest debt first for relief.'});
+    } else if(dti>20){
+      insights.push({type:'warn',icon:'⚠️',title:`Debt payments are ${dti.toFixed(0)}% of income — above ideal`,
+        text:`A healthy debt-to-income ratio is under <strong>20%</strong>. You're at ${dti.toFixed(0)}%, meaning <strong>$${debtMins}</strong> of every <strong>$${totalIncome.toLocaleString()}</strong> goes to minimums before you spend a dollar on anything else.`,
+        action:'Aim to get this under 20% over time.'});
+    } else {
+      insights.push({type:'good',icon:'✅',title:`Healthy debt-to-income ratio: ${dti.toFixed(0)}%`,
+        text:`Your debt minimums are <strong>${dti.toFixed(0)}%</strong> of income — well under the 20% ideal. This gives you genuine flexibility to make extra payments and accelerate your payoff.`});
+    }
+  }
+
+  // ── INTEREST DRAIN ────────────────────────
+  // How much of every minimum payment is just paying interest, not reducing balance
+  if(hasDebts){
+    const interestPct=debtMins>0?(monthlyInterest/debtMins)*100:0;
+    const annualInterest=monthlyInterest*12;
+    if(interestPct>60){
+      insights.push({type:'bad',icon:'🔥',title:`${interestPct.toFixed(0)}% of your payments are pure interest`,
+        text:`You pay <strong>$${monthlyInterest.toFixed(0)}/mo</strong> in interest — that's <strong>$${Math.round(annualInterest).toLocaleString()}/year</strong> that goes straight to the lender and reduces your balance by <strong>zero</strong>. This is the most important number to attack.`,
+        action:'Even $50 extra/mo on your highest-APR debt dramatically changes this.'});
+    } else if(interestPct>40){
+      insights.push({type:'warn',icon:'💸',title:`$${monthlyInterest.toFixed(0)}/mo is going to interest`,
+        text:`That's <strong>$${Math.round(annualInterest).toLocaleString()}/year</strong> paying for the privilege of being in debt. <strong>${interestPct.toFixed(0)}%</strong> of your minimum payments aren't reducing what you owe — they're just keeping the balance from growing.`});
+    } else if(monthlyInterest>0){
+      insights.push({type:'info',icon:'📊',title:`$${monthlyInterest.toFixed(0)}/mo in interest charges`,
+        text:`About <strong>${interestPct.toFixed(0)}%</strong> of your monthly payments are interest. This is manageable, but extra payments now save you real money — every dollar extra goes 100% to principal.`});
+    }
+  }
+
+  // ── HIGHEST APR DEBT ──────────────────────
+  if(hasDebts&&debts.length>1){
+    const worst=debts.reduce((a,b)=>b.rate>a.rate?b:a);
+    const best=debts.reduce((a,b)=>b.rate<a.rate?b:a);
+    if(worst.rate-best.rate>5){
+      const extraInterest=((worst.balance*worst.rate/100/12)-(worst.balance*best.rate/100/12)).toFixed(0);
+      insights.push({type:'warn',icon:'🎯',title:`${worst.name} has the highest APR at ${worst.rate}%`,
+        text:`This debt costs <strong>$${(worst.balance*worst.rate/100/12).toFixed(0)}/mo</strong> in interest vs <strong>$${(worst.balance*best.rate/100/12).toFixed(0)}/mo</strong> if it had ${best.name}'s rate. That gap is <strong>$${extraInterest}/mo</strong> extra because of the higher rate. Paying this off first saves the most money.`,
+        action:'This is your avalanche target.'});
+    }
+  }
+
+  // ── CREDIT CARD WARNING ───────────────────
+  const creditCards=debts.filter(d=>d.type==='Credit Card');
+  if(creditCards.length>0){
+    const highCards=creditCards.filter(d=>d.rate>24);
+    if(highCards.length>0){
+      const totalHighBalance=highCards.reduce((s,d)=>s+d.balance,0);
+      insights.push({type:'bad',icon:'💳',title:`${highCards.length} credit card${highCards.length>1?'s':''} above 24% APR`,
+        text:`High-rate cards destroy wealth fast. <strong>${highCards.map(d=>d.name).join(', ')}</strong> ${highCards.length>1?'carry':'carries'} a combined balance of <strong>$${totalHighBalance.toLocaleString()}</strong> at rates above 24%. If you could qualify for a balance transfer to 0% for 18 months, you'd save <strong>$${Math.round(totalHighBalance*.24/12*18).toLocaleString()}</strong> in interest.`,
+        action:'Check if you qualify for a 0% balance transfer card.'});
+    }
+  }
+
+  // ── 50/30/20 RULE CHECK ───────────────────
+  // Classic budgeting rule: 50% needs, 30% wants, 20% savings/debt
+  if(hasIncome&&hasBudget){
+    const needsPct=((totalFixed+debtMins)/totalIncome)*100;
+    const wantsPct=(totalVariable/totalIncome)*100;
+    const savingsPct=(Math.max(0,leftover)/totalIncome)*100;
+    if(needsPct>50){
+      insights.push({type:'warn',icon:'🏠',title:`Fixed costs are ${needsPct.toFixed(0)}% of income (target: 50%)`,
+        text:`The 50/30/20 rule says essentials (rent, utilities, debt minimums) should stay under <strong>50%</strong> of income. You're at <strong>${needsPct.toFixed(0)}%</strong>. This is often hard to change quickly — but it's worth reviewing insurance, phone plans, and subscriptions for cuts.`});
+    }
+    if(wantsPct>30){
+      const overBy=Math.round(totalVariable-(totalIncome*.30));
+      insights.push({type:'warn',icon:'🛍️',title:`Variable spending is ${wantsPct.toFixed(0)}% of income (target: 30%)`,
+        text:`You're spending <strong>$${overBy}/mo more</strong> on variable expenses than the 30% guideline suggests. Cutting this to 30% would free up <strong>$${overBy}/mo</strong> for extra debt payments — potentially shaving ${Math.round(overBy/debtMins*3)} months off your payoff.`});
+    }
+    if(savingsPct>=20&&!isNaN(savingsPct)){
+      insights.push({type:'good',icon:'🏆',title:`You're saving/available ${savingsPct.toFixed(0)}% of income`,
+        text:`The 50/30/20 rule targets 20% for savings and debt repayment. You're at <strong>${savingsPct.toFixed(0)}%</strong> — you have real firepower to eliminate debt fast if you channel this consistently.`});
+    }
+  }
+
+  // ── EMERGENCY FUND CHECK ──────────────────
+  if(hasIncome&&hasDebts){
+    // We can't know their savings, but we can flag if they have zero leftover
+    if(leftover<200&&leftover>=0){
+      insights.push({type:'warn',icon:'🆘',title:'Very little margin for emergencies',
+        text:`With only <strong>$${leftover.toFixed(0)}/mo</strong> left over, any unexpected expense — car repair, medical bill, appliance — could force you onto more debt. Before aggressively paying down debt, try to build a <strong>$500–$1,000 emergency buffer</strong> so you don't borrow more.`});
+    }
+  }
+
+  // ── QUICK WIN OPPORTUNITY ─────────────────
+  if(hasDebts&&debts.length>1){
+    const sorted=[...debts].filter(d=>d.balance>0).sort((a,b)=>a.balance-b.balance);
+    const smallest=sorted[0];
+    if(smallest.balance<500){
+      const monthsToKill=Math.ceil(smallest.balance/smallest.min);
+      insights.push({type:'good',icon:'⚡',title:`Quick win: ${smallest.name} can be cleared in ~${monthsToKill} month${monthsToKill!==1?'s':''}`,
+        text:`<strong>${smallest.name}</strong> only has <strong>$${smallest.balance.toFixed(0)}</strong> left. Paying just the minimum knocks it out in <strong>~${monthsToKill} months</strong>. Eliminating a debt — even a small one — reduces your mental load and frees up <strong>$${smallest.min}/mo</strong> to roll into the next debt.`});
+    }
+  }
+
+  // ── INTEREST VS PAYOFF COMPARISON ─────────
+  // How much total interest will they pay if they only pay minimums?
+  if(hasDebts){
+    let totalInterestPaid=0;
+    debts.forEach(d=>{
+      const mr=d.rate/100/12;
+      if(mr===0||d.min<=0)return;
+      const ratio=(mr*d.balance)/d.min;
+      if(ratio>=1)return;
+      const months=-Math.log(1-ratio)/Math.log(1+mr);
+      // Total paid minus principal = interest
+      totalInterestPaid+=d.min*months-d.balance;
+    });
+    if(totalInterestPaid>500){
+      insights.push({type:'info',icon:'🔮',title:`You'll pay ~$${Math.round(totalInterestPaid).toLocaleString()} in total interest at minimum payments`,
+        text:`Paying only minimums means you'll hand lenders an extra <strong>$${Math.round(totalInterestPaid).toLocaleString()}</strong> on top of what you already owe. Increasing monthly payments — even by $50–100 — can cut this significantly.`,
+        action:'Use the Plan tab to see exactly how much extra payments save.'});
+    }
+  }
+
+  // ── DEBT-FREE DATE ────────────────────────
+  if(hasDebts&&hasIncome&&leftover>0){
+    const monthsMin=estPayoffMonths(0);
+    const monthsWithLeftover=estPayoffMonths(Math.round(leftover*.5));
+    const saved=monthsMin-monthsWithLeftover;
+    if(saved>2){
+      insights.push({type:'good',icon:'🗓️',title:`Putting 50% of leftover toward debt saves ~${saved} months`,
+        text:`At minimums only: debt-free in <strong>~${monthsMin} months</strong>. Adding <strong>$${Math.round(leftover*.5)}/mo</strong> extra: debt-free in <strong>~${monthsWithLeftover} months</strong>. That's <strong>${saved} fewer months</strong> of payments — and far less interest paid.`});
+    }
+  }
+
+  // ── BUILD THE HTML ────────────────────────
+  if(!insights.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🎉</div>No major issues found. Fill in your full budget and debts for more insights.</div>`;
+    return;
+  }
+
+  // Sort: bad → warn → info → good
+  const order={bad:0,warn:1,info:2,good:3};
+  insights.sort((a,b)=>order[a.type]-order[b.type]);
+
+  el.innerHTML=insights.map(ins=>`
+    <div class="insight-card ${ins.type}">
+      <div class="insight-icon">${ins.icon}</div>
+      <div class="insight-body">
+        <div class="insight-title">${ins.title}</div>
+        <div class="insight-text">${ins.text}</div>
+        ${ins.action?`<div class="insight-action">→ ${ins.action}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// PLAN
+// ═══════════════════════════════════════════
+function renderPlan(){
+  const extra=parseFloat(document.getElementById('extra-budget').value)||0;
+  const strategy=document.getElementById('strategy').value;
+  const el=document.getElementById('plan-output');
+  if(!debts.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div>Add debts first.</div>`;return}
+  let sorted=[...debts].filter(d=>d.balance>0);
+  sorted.sort(strategy==='avalanche'?(a,b)=>b.rate-a.rate:(a,b)=>a.balance-b.balance);
+  const totalMin=debts.reduce((s,d)=>s+d.min,0);
+  let html=`<div class="plan-card">
+    <div class="plan-header">
+      <div class="plan-title">${strategy==='avalanche'?'❄️ Debt Avalanche':'⛄ Debt Snowball'} Plan</div>
+      <span class="plan-badge ${strategy}">${strategy}</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Budget: $${(totalMin+extra).toFixed(0)}/mo — minimums $${totalMin} + extra $${extra}</div>`;
+  sorted.forEach((d,i)=>{
+    const payment=i===0?d.min+extra:d.min,mr=d.rate/100/12;
+    let months;
+    if(mr===0){months=d.balance/payment;}
+    else{const r=(mr*d.balance)/payment;months=r>=1?999:-Math.log(1-r)/Math.log(1+mr);}
+    const dt=new Date(); dt.setMonth(dt.getMonth()+Math.ceil(months));
+    const dateStr=months>=999?'Never — increase payment!':dt.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    html+=`<div class="plan-step">
+      <div class="step-num">${i+1}</div>
+      <div class="step-name">${d.name}</div>
+      <div class="step-detail">$${payment.toFixed(0)}/mo · ${months<999?'~'+Math.ceil(months)+'mo':'∞'} · ${dateStr}</div>
+    </div>`;
+  });
+  html+=`</div><div class="plan-card" style="border-color:rgba(0,229,160,.2);background:rgba(0,229,160,.03)">
+    <div style="font-size:11px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">💡 How it works</div>
+    <div style="font-size:13px;line-height:1.7;color:var(--muted)">${strategy==='avalanche'?'Avalanche saves the most in interest. Hit the highest-rate debt first, then roll its payment to the next.':'Snowball builds momentum. Clear the smallest balance first for quick wins, then roll payments forward.'}<br><br>
+    Once a debt is gone, add its entire payment to the next — this "debt roll" dramatically speeds up payoff.</div></div>`;
+  el.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════
+const CC=['#00e5a0','#00c9f0','#ffd166','#ff6b6b','#b388ff','#ff9a56','#69d8ff'];
+function renderCharts(){
+  if(!debts.length){document.getElementById('payoff-timeline').innerHTML=`<div class="empty"><div class="empty-icon">📈</div>Add debts to see charts.</div>`;return}
+  drawLineChart(); drawDonutChart(); drawBarChart(); drawTimeline();
+}
+function drawLineChart(){
+  const canvas=document.getElementById('chart-line');
+  const extra=parseFloat(document.getElementById('chart-extra').value)||0;
+  let sim=debts.map(d=>({...d}));
+  const pts=[],labels=[];
+  for(let m=0;m<=120;m++){
+    pts.push(sim.reduce((s,d)=>s+d.balance,0));
+    const dt=new Date(); dt.setMonth(dt.getMonth()+m);
+    labels.push(m%12===0?dt.getFullYear().toString():'');
+    if(sim.every(d=>d.balance<=0))break;
+    let eLeft=extra;
+    sim=sim.map(d=>{if(d.balance<=0)return d;d.balance=Math.max(0,d.balance+(d.balance*d.rate/100/12)-d.min-eLeft);eLeft=0;return d;});
+  }
+  drawLine(canvas,pts,labels,'#00e5a0');
+}
+function drawLine(canvas,data,labels,color){
+  const W=canvas.offsetWidth||800,H=220;
+  canvas.width=W*2;canvas.height=H*2;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(2,2);
+  const pad={top:20,right:20,bottom:36,left:64},w=W-pad.left-pad.right,h=H-pad.top-pad.bottom;
+  ctx.clearRect(0,0,W,H);
+  const maxVal=Math.max(...data)||1;
+  ctx.strokeStyle='#2a2a3f';ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){const y=pad.top+(h/5)*i;ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+w,y);ctx.stroke();ctx.fillStyle='#6b6b8a';ctx.font='10px DM Mono,monospace';ctx.textAlign='right';ctx.fillText('$'+fmtK(maxVal-(maxVal/5)*i),pad.left-8,y+4)}
+  ctx.fillStyle='#6b6b8a';ctx.font='10px DM Mono,monospace';ctx.textAlign='center';
+  labels.forEach((lbl,i)=>{if(!lbl)return;ctx.fillText(lbl,pad.left+(i/(data.length-1))*w,H-pad.bottom+16)});
+  const grad=ctx.createLinearGradient(0,pad.top,0,pad.top+h);
+  grad.addColorStop(0,'rgba(0,229,160,.18)');grad.addColorStop(1,'rgba(0,229,160,0)');
+  ctx.beginPath();
+  data.forEach((v,i)=>{const x=pad.left+(i/(data.length-1))*w,y=pad.top+h-(v/maxVal)*h;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+  ctx.lineTo(pad.left+w,pad.top+h);ctx.lineTo(pad.left,pad.top+h);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineJoin='round';
+  data.forEach((v,i)=>{const x=pad.left+(i/(data.length-1))*w,y=pad.top+h-(v/maxVal)*h;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+  ctx.stroke();
+  if(data[data.length-1]===0){ctx.fillStyle=color;ctx.font='bold 11px Syne,sans-serif';ctx.textAlign='center';ctx.fillText('DEBT FREE! 🎉',pad.left+(data.length-1)/(data.length-1)*w,pad.top+h-8)}
+}
+function fmtK(v){return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'k':Math.round(v).toString()}
+function drawDonutChart(){
+  const canvas=document.getElementById('chart-donut');
+  const sz=150;canvas.width=sz*2;canvas.height=sz*2;canvas.style.width=sz+'px';canvas.style.height=sz+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(2,2);
+  const cx=sz/2,cy=sz/2,r=56,inner=34,total=debts.reduce((s,d)=>s+d.balance,0)||1;
+  let ang=-Math.PI/2;
+  debts.forEach((d,i)=>{const slice=(d.balance/total)*Math.PI*2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,ang,ang+slice);ctx.closePath();ctx.fillStyle=CC[i%CC.length];ctx.fill();ang+=slice});
+  ctx.beginPath();ctx.arc(cx,cy,inner,0,Math.PI*2);ctx.fillStyle='#1a1a26';ctx.fill();
+  ctx.fillStyle='#e8e8f0';ctx.font='bold 12px Syne,sans-serif';ctx.textAlign='center';ctx.fillText('$'+fmtK(total),cx,cy+5);
+  document.getElementById('donut-legend').innerHTML=debts.map((d,i)=>`<div class="legend-item"><div class="legend-dot" style="background:${CC[i%CC.length]}"></div><span>${d.name}</span></div>`).join('');
+}
+function drawBarChart(){
+  const canvas=document.getElementById('chart-bar');
+  const W=canvas.offsetWidth||360,H=200;
+  canvas.width=W*2;canvas.height=H*2;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(2,2);ctx.clearRect(0,0,W,H);
+  const pad={top:14,right:14,bottom:38,left:46},w=W-pad.left-pad.right,h=H-pad.top-pad.bottom;
+  const maxVal=Math.max(...debts.map(d=>d.min))||1,gap=w/debts.length,barW=gap*.6;
+  ctx.strokeStyle='#2a2a3f';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pad.top+(h/4)*i;ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+w,y);ctx.stroke();ctx.fillStyle='#6b6b8a';ctx.font='10px DM Mono,monospace';ctx.textAlign='right';ctx.fillText('$'+Math.round(maxVal-(maxVal/4)*i),pad.left-5,y+4)}
+  debts.forEach((d,i)=>{
+    const barH=(d.min/maxVal)*h,x=pad.left+gap*i+(gap-barW)/2,y=pad.top+h-barH;
+    const grad=ctx.createLinearGradient(0,y,0,y+barH);grad.addColorStop(0,CC[i%CC.length]);grad.addColorStop(1,CC[i%CC.length]+'66');
+    ctx.beginPath();ctx.roundRect(x,y,barW,barH,[4,4,0,0]);ctx.fillStyle=grad;ctx.fill();
+    ctx.fillStyle='#6b6b8a';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';
+    ctx.fillText(d.name.length>8?d.name.slice(0,7)+'…':d.name,x+barW/2,H-pad.bottom+13);
+  });
+}
+function drawTimeline(){
+  const extra=parseFloat(document.getElementById('chart-extra').value)||0;
+  const results=debts.map((d,i)=>{
+    if(d.balance<=0)return{...d,months:0,color:CC[i%CC.length]};
+    const payment=d.min+(i===0?extra:0),mr=d.rate/100/12;
+    let months;
+    if(mr===0){months=d.balance/payment}else{const r=(mr*d.balance)/payment;months=r>=1?999:-Math.log(1-r)/Math.log(1+mr)}
+    return{...d,months:Math.ceil(months),color:CC[i%CC.length]};
+  });
+  const maxM=Math.max(...results.map(r=>r.months),1);
+  document.getElementById('payoff-timeline').innerHTML=results.map(r=>{
+    const pct=Math.min(100,Math.round((r.months/maxM)*100));
+    const dt=new Date();dt.setMonth(dt.getMonth()+r.months);
+    const dateStr=r.months>=999?'Never — increase payment!':dt.toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    return `<div class="timeline-row"><div class="timeline-label" title="${r.name}">${r.name}</div><div class="timeline-bar-wrap"><div class="timeline-bar-fill" style="width:${pct}%;background:${r.color}">${r.months<999?r.months+'mo':''}</div></div><div class="timeline-date">${dateStr}</div></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════
+function renderHistory(){
+  const el=document.getElementById('history-list');
+  if(!history.length){el.innerHTML=`<div class="section-title">Payment History</div><div class="empty"><div class="empty-icon">📅</div>No payments yet.</div>`;return}
+  el.innerHTML=`<div class="section-title">Payment History</div>`+history.map(h=>`<div class="history-item"><span class="history-debt">${h.debtName}</span><span class="history-date">${h.date}</span><span class="history-amount">−$${h.amount.toFixed(2)}</span></div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// REMINDERS
+// Two types:
+//   1. Auto — generated from each debt's due
+//      day. Recalculated live every time you
+//      open the tab. Nothing to save.
+//   2. Custom — one-off dates you set yourself.
+//      Saved to localStorage like before.
+// ═══════════════════════════════════════════
+
+// ── AUTO REMINDERS (monthly, from debt due days) ──
+function renderAutoReminders(){
+  const el=document.getElementById('auto-reminder-list');
+  if(!debts.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🔁</div>Add debts with due days in "My Debts" to see monthly reminders here.</div>`;
+    return;
+  }
+
+  const now=new Date();
+  const todayDay=now.getDate();
+  const todayMonth=now.getMonth();
+  const todayYear=now.getFullYear();
+
+  // For each debt, figure out the next due date from today
+  const items=debts.map(d=>{
+    const dueDay=d.due||1;
+
+    // Build this month's due date
+    let dueDate=new Date(todayYear, todayMonth, dueDay);
+
+    // If that date has already passed this month, push to next month
+    if(dueDate<now) dueDate=new Date(todayYear, todayMonth+1, dueDay);
+
+    const diffMs=dueDate-now;
+    const daysUntil=Math.ceil(diffMs/(1000*60*60*24));
+
+    // Also build last month's due date to show if recently overdue
+    const lastDue=new Date(todayYear, todayMonth-1, dueDay);
+    const daysSinceLastDue=Math.floor((now-lastDue)/(1000*60*60*24));
+
+    return {d, dueDate, daysUntil, daysSinceLastDue};
+  });
+
+  // Sort by soonest due first
+  items.sort((a,b)=>a.daysUntil-b.daysUntil);
+
+  el.innerHTML=items.map(({d, dueDate, daysUntil})=>{
+    let status, badgeClass, cardClass, daysLabel, daysDisplay;
+
+    if(daysUntil===0){
+      status='DUE TODAY'; badgeClass='today'; cardClass='due-today';
+      daysDisplay='TODAY'; daysLabel='';
+    } else if(daysUntil<0){
+      // This shouldn't happen since we push to next month, but just in case
+      status='OVERDUE'; badgeClass='overdue'; cardClass='overdue';
+      daysDisplay=Math.abs(daysUntil); daysLabel='days overdue';
+    } else if(daysUntil<=5){
+      status='DUE SOON'; badgeClass='soon'; cardClass='due-soon';
+      daysDisplay=daysUntil; daysLabel=`day${daysUntil!==1?'s':''} away`;
+    } else {
+      status='UPCOMING'; badgeClass='ok'; cardClass='';
+      daysDisplay=daysUntil; daysLabel=`day${daysUntil!==1?'s':''} away`;
+    }
+
+    const dueDateStr=dueDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const daysColorClass=daysUntil<=0?'urgent':daysUntil<=5?'warn':'';
+
+    return `
+    <div class="auto-reminder-card ${cardClass}">
+      <div style="flex:1;min-width:0">
+        <div class="auto-debt-name">${d.name}</div>
+        <div class="auto-debt-detail">${d.type} · Min payment $${d.min} · Due day ${d.due} of every month</div>
+        <div class="auto-debt-detail" style="margin-top:4px">Next due: <strong style="color:var(--text)">${dueDateStr}</strong></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="auto-days ${daysColorClass}">${daysDisplay}</div>
+        <div class="auto-days-label">${daysLabel}</div>
+        <div style="margin-top:6px"><span class="auto-badge ${badgeClass}">${status}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CUSTOM ONE-OFF REMINDERS ──
+function addReminder(){
+  const text=document.getElementById('reminder-text').value.trim();
+  const date=document.getElementById('reminder-date').value;
+  if(!text||!date){toast('Fill in text and date.',true);return}
+  reminders.push({id:Date.now(),text,date});
+  reminders.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  save('reminders',reminders);
+  document.getElementById('reminder-text').value='';
+  document.getElementById('reminder-date').value='';
+  renderCustomReminders();toast('Reminder saved!');
+}
+function deleteReminder(id){reminders=reminders.filter(r=>r.id!==id);save('reminders',reminders);renderCustomReminders()}
+function renderCustomReminders(){
+  const el=document.getElementById('reminder-list');
+  if(!reminders.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📌</div>No custom reminders yet.</div>`;return}
+  const today=new Date().toISOString().split('T')[0];
+  el.innerHTML=reminders.map(r=>{
+    const od=r.date<today;
+    return `<div class="reminder-card" style="${od?'border-left-color:var(--accent2)':''}">
+      <div><div class="reminder-text">${od?'⚠️ ':'🔔 '}${r.text}</div><div class="reminder-date">${fmtDate(r.date)}${od?' · OVERDUE':''}</div></div>
+      <button class="reminder-del" onclick="deleteReminder(${r.id})">×</button>
+    </div>`;
+  }).join('');
+}
+
+// Render both sections together
+function renderReminders(){
+  renderNotificationStatus();
+  renderAutoReminders();
+  renderCustomReminders();
+}
+function fmtDate(str){const d=new Date(str+'T00:00:00');return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function fmt(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function toast(msg,isError=false){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.style.background=isError?'var(--accent2)':'var(--accent)';el.style.color=isError?'#fff':'#000';
+  el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ═══════════════════════════════════════════
+// PUSH NOTIFICATIONS
+//
+// How this works:
+// 1. We register a Service Worker (sw.js) —
+//    a background script the browser keeps
+//    alive even when the tab is closed.
+// 2. We ask the user for notification permission.
+// 3. Every time the page loads, we schedule
+//    notifications for any debts due today
+//    or within 3 days, and any custom reminders.
+// 4. The Service Worker receives those scheduled
+//    messages and fires the actual notification
+//    at the right time.
+// ═══════════════════════════════════════════
+
+let swRegistration = null;
+
+async function initNotifications() {
+  // Service workers only work on https:// or localhost
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+    console.log('Notifications not supported in this browser/environment.');
+    return;
+  }
+
+  try {
+    // Register the service worker file (sw.js must be in the same folder)
+    swRegistration = await navigator.serviceWorker.register('./sw.js');
+    console.log('Service Worker registered.');
+  } catch(e) {
+    console.log('SW registration failed:', e);
+    return;
+  }
+}
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    toast('Notifications not supported in this browser.', true);
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    toast('🔔 Notifications enabled!');
+    scheduleNotifications();
+    renderNotificationStatus();
+  } else {
+    toast('Notifications blocked. You can enable them in browser settings.', true);
+    renderNotificationStatus();
+  }
+}
+
+// Schedule notifications by posting a message to the Service Worker.
+// The SW stores them and fires at the right time.
+function scheduleNotifications() {
+  if (!swRegistration || Notification.permission !== 'granted') return;
+
+  const now = new Date();
+  const todayDay = now.getDate();
+  const notifications = [];
+
+  // Debt due date notifications — fire 3 days before and on the day
+  debts.filter(d => d.balance > 0).forEach(d => {
+    const dueDay = d.due || 1;
+    let dueDate = new Date(now.getFullYear(), now.getMonth(), dueDay);
+    if (dueDate < now) dueDate = new Date(now.getFullYear(), now.getMonth() + 1, dueDay);
+
+    const daysUntil = Math.ceil((dueDate - now) / (1000*60*60*24));
+
+    if (daysUntil <= 3) {
+      notifications.push({
+        title: daysUntil === 0 ? `💳 Payment due TODAY` : `⏰ Payment due in ${daysUntil} day${daysUntil!==1?'s':''}`,
+        body: `${d.name} — minimum payment $${d.min}`,
+        tag: `debt-${d.id}-${dueDate.toISOString().split('T')[0]}`,
+        // fireAt: timestamp in ms when to show it (at 9am on the due date)
+        fireAt: new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate()-Math.min(daysUntil,0), 9, 0, 0).getTime()
+      });
+    }
+  });
+
+  // Custom reminder notifications
+  const todayStr = now.toISOString().split('T')[0];
+  reminders.forEach(r => {
+    if (r.date >= todayStr) {
+      const rDate = new Date(r.date + 'T09:00:00');
+      notifications.push({
+        title: '🔔 Reminder',
+        body: r.text,
+        tag: `reminder-${r.id}`,
+        fireAt: rDate.getTime()
+      });
+    }
+  });
+
+  // Send scheduled list to the service worker
+  if (swRegistration.active) {
+    swRegistration.active.postMessage({ type: 'SCHEDULE', notifications });
+  }
+}
+
+// Render a small notification status banner in the Reminders tab
+function renderNotificationStatus() {
+  const el = document.getElementById('notif-status');
+  if (!el) return;
+
+  if (!('Notification' in window)) {
+    el.innerHTML = `<div class="notif-banner notif-unsupported">⚠️ Notifications aren't supported in this browser. Try Chrome or Edge.</div>`;
+    return;
+  }
+
+  const perm = Notification.permission;
+  if (perm === 'granted') {
+    el.innerHTML = `
+      <div class="notif-banner notif-on">
+        🔔 Push notifications are <strong>ON</strong>
+        <button class="btn btn-sm btn-ghost" style="margin-left:12px" onclick="scheduleNotifications();toast('Notifications refreshed!')">Refresh</button>
+      </div>`;
+  } else if (perm === 'denied') {
+    el.innerHTML = `<div class="notif-banner notif-off">🔕 Notifications are <strong>blocked</strong>. Go to your browser settings → Site Settings → Notifications to re-enable.</div>`;
+  } else {
+    el.innerHTML = `
+      <div class="notif-banner notif-ask">
+        🔔 Enable push notifications to get alerts when payments are due — even with the tab closed.
+        <button class="btn btn-sm" style="margin-left:12px" onclick="requestNotificationPermission()">Enable Notifications</button>
+      </div>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+renderDashboard();
+renderExpenseLists();
+
+// Start service worker
+initNotifications().then(() => {
+  scheduleNotifications();
+  renderNotificationStatus();
+});
+
+// In-app toast for things due today
+const todayStr=new Date().toISOString().split('T')[0];
+const todayDay=new Date().getDate();
+const customDueToday=reminders.filter(r=>r.date===todayStr);
+const debtsDueToday=debts.filter(d=>d.due===todayDay&&d.balance>0);
+const totalDueToday=customDueToday.length+debtsDueToday.length;
+if(totalDueToday>0){
+  const parts=[];
+  if(debtsDueToday.length) parts.push(`${debtsDueToday.length} payment${debtsDueToday.length!==1?'s':''} due`);
+  if(customDueToday.length) parts.push(`${customDueToday.length} reminder${customDueToday.length!==1?'s':''}`);
+  setTimeout(()=>toast(`🔔 Today: ${parts.join(' · ')}!`),1000);
+}
+</script>
+</body>
+</html>
