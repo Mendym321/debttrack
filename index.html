@@ -108,6 +108,33 @@ select option{background:var(--bg)}
 .sub-section{display:none}
 .sub-section.active{display:block;animation:fadeUp .3s ease both}
 
+/* Assets */
+.asset-item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;animation:fadeUp .3s ease both}
+.asset-item:hover{border-color:var(--accent)}
+.asset-cat-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 8px;margin-top:3px;display:inline-block}
+.asset-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
+.asset-value{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--accent);flex-shrink:0}
+.asset-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* Net worth summary card */
+.networth-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;margin-bottom:22px;position:relative;overflow:hidden}
+.networth-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),#00c9f0,transparent)}
+.networth-headline{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;margin:8px 0 4px}
+.networth-headline.positive{color:var(--accent)}
+.networth-headline.negative{color:var(--accent2)}
+.networth-row{display:flex;gap:24px;flex-wrap:wrap;margin-top:16px}
+.networth-col{flex:1;min-width:120px}
+.networth-col-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.networth-col-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:700}
+
+/* Net worth home mini card */
+.nw-home-card{background:var(--card);border:1px solid rgba(0,229,160,.15);border-radius:16px;padding:18px 22px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;cursor:pointer;transition:border-color .2s}
+.nw-home-card:hover{border-color:var(--accent)}
+.nw-home-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.nw-home-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:800}
+.nw-home-value.pos{color:var(--accent)} .nw-home-value.neg{color:var(--accent2)}
+.nw-home-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
 .notif-banner{border-radius:12px;padding:14px 18px;font-size:13px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px}
 .notif-on{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);color:var(--accent)}
 .notif-on strong{color:var(--accent)}
@@ -274,6 +301,7 @@ canvas{display:block;width:100%}
      ═══════════════════════════════════════════ -->
 <div class="section active" id="tab-home">
   <div class="summary-grid" id="summary-grid"></div>
+  <div id="networth-home"></div>
   <div class="section-title">Your Debts</div>
   <div id="dashboard-debts"></div>
 </div>
@@ -322,6 +350,7 @@ canvas{display:block;width:100%}
   <!-- Sub-nav inside Money tab -->
   <div class="sub-tabs">
     <button class="sub-tab active" onclick="switchSubTab('budget',this)">Budget</button>
+    <button class="sub-tab" onclick="switchSubTab('assets',this)">Assets</button>
     <button class="sub-tab" onclick="switchSubTab('insights',this)">Insights</button>
   </div>
 
@@ -357,6 +386,48 @@ canvas{display:block;width:100%}
     <div id="budget-output"></div>
   </div>
 
+  <!-- ASSETS sub-section -->
+  <div class="sub-section" id="sub-assets">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+      Track what you own. Net worth = total assets minus total debt. As your assets grow and debt shrinks, your net worth climbs.
+    </p>
+
+    <!-- Add asset form -->
+    <div class="form-card">
+      <div class="section-title">Add an Asset</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Asset Name</label>
+          <input type="text" id="asset-name" placeholder="e.g. Savings Account">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="asset-category">
+            <option>Cash / Savings</option>
+            <option>Investments</option>
+            <option>Retirement (401k / IRA)</option>
+            <option>Real Estate</option>
+            <option>Vehicle</option>
+            <option>Crypto</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Current Value ($)</label>
+          <input type="number" id="asset-value" placeholder="5000" min="0">
+        </div>
+      </div>
+      <button class="btn" onclick="addAsset()">+ Add Asset</button>
+    </div>
+
+    <!-- Net worth summary -->
+    <div id="networth-summary"></div>
+
+    <!-- Asset list -->
+    <div class="section-title">Your Assets</div>
+    <div id="asset-list"></div>
+  </div>
+
   <!-- INSIGHTS sub-section -->
   <div class="sub-section" id="sub-insights">
     <p style="font-size:12px;color:var(--muted);margin-bottom:20px">Based on your debts and budget. Updates automatically as you add data.</p>
@@ -370,6 +441,7 @@ canvas{display:block;width:100%}
 <div class="section" id="tab-progress">
   <div class="sub-tabs">
     <button class="sub-tab active" onclick="switchSubTab('charts',this)">Charts</button>
+    <button class="sub-tab" onclick="switchSubTab('networth',this)">Net Worth</button>
     <button class="sub-tab" onclick="switchSubTab('history',this)">History</button>
   </div>
 
@@ -399,6 +471,19 @@ canvas{display:block;width:100%}
       <div class="chart-title">Payoff Timeline</div><div class="chart-sub">Estimated date each debt is eliminated</div>
       <div id="payoff-timeline"></div>
     </div>
+  </div>
+
+  <!-- NET WORTH sub-section -->
+  <div class="sub-section" id="sub-networth">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+      A snapshot is saved automatically each time you visit this tab. Over time this builds a picture of your financial progress.
+    </p>
+    <div id="networth-chart-wrap" class="chart-card">
+      <div class="chart-title">Net Worth Over Time</div>
+      <div class="chart-sub">Assets vs Liabilities</div>
+      <canvas id="chart-networth" height="240"></canvas>
+    </div>
+    <div id="networth-snapshots"></div>
   </div>
 
   <!-- HISTORY sub-section -->
@@ -614,11 +699,49 @@ async function dbSaveBudget(budgetData) {
   await sb.from('budgets').upsert({ user_id: currentUser.id, data: budgetData, updated_at: new Date().toISOString() });
 }
 
+async function dbLoadAssets() {
+  const { data, error } = await sb.from('assets').select('*').order('created_at');
+  if (error) { console.error(error); return []; }
+  return data.map(r => ({ id: r.id, name: r.name, category: r.category, value: r.value }));
+}
+
+async function dbAddAsset(asset) {
+  const { data, error } = await sb.from('assets').insert({
+    user_id: currentUser.id, name: asset.name, category: asset.category, value: asset.value
+  }).select().single();
+  if (error) { toast('Error saving asset.', true); return null; }
+  return { ...asset, id: data.id };
+}
+
+async function dbUpdateAsset(asset) {
+  await sb.from('assets').update({ name: asset.name, category: asset.category, value: asset.value }).eq('id', asset.id);
+}
+
+async function dbDeleteAsset(id) {
+  await sb.from('assets').delete().eq('id', id);
+}
+
+async function dbLoadSnapshots() {
+  const { data, error } = await sb.from('networth_snapshots').select('*').order('snapshot_date');
+  if (error) { console.error(error); return []; }
+  return data;
+}
+
+async function dbSaveSnapshot(assetsTotal, liabilitiesTotal) {
+  const netWorth = assetsTotal - liabilitiesTotal;
+  const today = new Date().toISOString().split('T')[0];
+  // Upsert so we only keep one snapshot per day
+  await sb.from('networth_snapshots').upsert({
+    user_id: currentUser.id,
+    assets_total: assetsTotal,
+    liabilities_total: liabilitiesTotal,
+    net_worth: netWorth,
+    snapshot_date: today
+  }, { onConflict: 'user_id,snapshot_date' });
+}
+
 // ── IN-MEMORY STATE ───────────────────────────
-// After loading from Supabase we keep data in
-// memory so the UI stays snappy. We only hit
-// the database when something actually changes.
-let debts = [], history = [], reminders = [], budget = {};
+let debts = [], history = [], reminders = [], budget = {}, assets = [], snapshots = [];
 let payingId = null, editingId = null;
 
 // ═══════════════════════════════════════════
@@ -641,16 +764,16 @@ function switchTab(name, btn){
 }
 
 function switchSubTab(name, btn){
-  // Find the parent section and only toggle within it
   const parent = btn.closest('.section');
   parent.querySelectorAll('.sub-section').forEach(s=>s.classList.remove('active'));
   parent.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
   parent.querySelector('#sub-'+name).classList.add('active');
   btn.classList.add('active');
-  // Trigger renders that need the element visible to draw correctly
-  if(name==='charts') renderCharts();
-  if(name==='history') renderHistory();
+  if(name==='charts')   renderCharts();
+  if(name==='history')  renderHistory();
   if(name==='insights') renderInsights();
+  if(name==='assets')   renderAssets();
+  if(name==='networth') renderNetworthChart();
 }
 
 // ═══════════════════════════════════════════
@@ -737,6 +860,7 @@ async function confirmPayment(){
   const dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
   await dbUpdateDebt(d);
   await dbAddPayment(d.name, actual, dateStr);
+  await autoSnapshot();
   history.unshift({id:Date.now(),debtName:d.name,amount:actual,date:dateStr});
   closeModal('pay-modal');
   renderDebtList();
@@ -787,6 +911,280 @@ async function deleteDebt(id){
 }
 
 // ═══════════════════════════════════════════
+// ASSETS & NET WORTH
+//
+// Assets are things you own with monetary
+// value. Net worth = total assets - total debt.
+// We save a daily snapshot so you can see
+// your net worth grow over time on a chart.
+// ═══════════════════════════════════════════
+
+const ASSET_CATEGORY_ICONS = {
+  'Cash / Savings':        '💵',
+  'Investments':           '📈',
+  'Retirement (401k / IRA)':'🏦',
+  'Real Estate':           '🏠',
+  'Vehicle':               '🚗',
+  'Crypto':                '₿',
+  'Other':                 '📦'
+};
+
+function totalAssets() {
+  return assets.reduce((s,a) => s + (parseFloat(a.value)||0), 0);
+}
+function totalLiabilities() {
+  return debts.reduce((s,d) => s + (parseFloat(d.balance)||0), 0);
+}
+function netWorth() {
+  return totalAssets() - totalLiabilities();
+}
+
+// ── ADD / DELETE ASSET ────────────────────
+async function addAsset() {
+  const name     = document.getElementById('asset-name').value.trim();
+  const category = document.getElementById('asset-category').value;
+  const value    = parseFloat(document.getElementById('asset-value').value) || 0;
+  if (!name) { toast('Enter an asset name.', true); return; }
+  const a = await dbAddAsset({ name, category, value });
+  if (!a) return;
+  assets.push(a);
+  document.getElementById('asset-name').value  = '';
+  document.getElementById('asset-value').value = '';
+  await autoSnapshot();
+  renderAssets();
+  renderNetworthHome();
+  toast('Asset added!');
+}
+
+async function deleteAsset(id) {
+  if (!confirm('Delete this asset?')) return;
+  await dbDeleteAsset(id);
+  assets = assets.filter(a => a.id !== id);
+  await autoSnapshot();
+  renderAssets();
+  renderNetworthHome();
+  toast('Asset removed.');
+}
+
+async function updateAssetValue(id, val) {
+  const a = assets.find(x => x.id === id);
+  a.value = parseFloat(val) || 0;
+  await dbUpdateAsset(a);
+  await autoSnapshot();
+  renderNetworthSummary();
+  renderNetworthHome();
+}
+
+// ── AUTO SNAPSHOT ─────────────────────────
+// Called whenever assets or debts change.
+// Saves one record per day to networth_snapshots.
+async function autoSnapshot() {
+  snapshots = await dbLoadSnapshots(); // reload fresh
+  await dbSaveSnapshot(totalAssets(), totalLiabilities());
+  snapshots = await dbLoadSnapshots();
+}
+
+// ── RENDER ASSET LIST ─────────────────────
+function renderAssets() {
+  renderNetworthSummary();
+  const el = document.getElementById('asset-list');
+  if (!assets.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">💰</div>Add your first asset above — savings account, investments, car value, etc.</div>`;
+    return;
+  }
+
+  // Group by category
+  const groups = {};
+  assets.forEach(a => {
+    if (!groups[a.category]) groups[a.category] = [];
+    groups[a.category].push(a);
+  });
+
+  el.innerHTML = Object.entries(groups).map(([cat, items]) => `
+    <div style="margin-bottom:18px">
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">
+        ${ASSET_CATEGORY_ICONS[cat]||'📦'} ${cat}
+      </div>
+      ${items.map(a => `
+        <div class="asset-item">
+          <div>
+            <div class="asset-name">${a.name}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="display:flex;align-items:center;gap:4px">
+              <span style="color:var(--muted);font-size:13px">$</span>
+              <input type="number" value="${a.value}" min="0"
+                style="width:110px;text-align:right;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--accent);background:transparent;border:none;border-bottom:1px solid var(--border);padding:2px 4px;outline:none"
+                onchange="updateAssetValue('${a.id}', this.value)"
+                onfocus="this.style.borderBottomColor='var(--accent)'"
+                onblur="this.style.borderBottomColor='var(--border)'">
+            </div>
+            <button class="btn btn-sm btn-danger" onclick="deleteAsset('${a.id}')">×</button>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ── NET WORTH SUMMARY (inside Assets tab) ─
+function renderNetworthSummary() {
+  const el = document.getElementById('networth-summary');
+  if (!el) return;
+  const nw    = netWorth();
+  const ta    = totalAssets();
+  const tl    = totalLiabilities();
+  const isPos = nw >= 0;
+
+  el.innerHTML = `
+    <div class="networth-card" style="margin-bottom:24px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Net Worth</div>
+      <div class="networth-headline ${isPos?'positive':'negative'}">${isPos?'':'-'}$${Math.abs(Math.round(nw)).toLocaleString()}</div>
+      <div style="font-size:12px;color:var(--muted)">${isPos ? 'Assets exceed liabilities 🎉' : `$${Math.abs(Math.round(nw)).toLocaleString()} more debt than assets`}</div>
+      <div class="networth-row">
+        <div class="networth-col">
+          <div class="networth-col-label">Total Assets</div>
+          <div class="networth-col-val" style="color:var(--accent)">$${Math.round(ta).toLocaleString()}</div>
+        </div>
+        <div class="networth-col">
+          <div class="networth-col-label">Total Debt</div>
+          <div class="networth-col-val" style="color:var(--accent2)">$${Math.round(tl).toLocaleString()}</div>
+        </div>
+        <div class="networth-col">
+          <div class="networth-col-label">Assets / Debt ratio</div>
+          <div class="networth-col-val" style="color:var(--accent3)">${tl>0?(ta/tl).toFixed(2):'∞'}x</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── NET WORTH HOME CARD ───────────────────
+function renderNetworthHome() {
+  const el = document.getElementById('networth-home');
+  if (!el) return;
+  if (!assets.length && !debts.length) { el.innerHTML = ''; return; }
+  const nw    = netWorth();
+  const isPos = nw >= 0;
+  const trend = snapshots.length >= 2
+    ? nw - snapshots[snapshots.length - 2].net_worth
+    : null;
+
+  el.innerHTML = `
+    <div class="nw-home-card" onclick="document.querySelector('[onclick*=progress]').click()">
+      <div>
+        <div class="nw-home-label">Net Worth</div>
+        <div class="nw-home-value ${isPos?'pos':'neg'}">${isPos?'':'-'}$${Math.abs(Math.round(nw)).toLocaleString()}</div>
+        <div class="nw-home-sub">${trend !== null
+          ? (trend >= 0
+            ? `↑ $${Math.abs(Math.round(trend)).toLocaleString()} since last snapshot`
+            : `↓ $${Math.abs(Math.round(trend)).toLocaleString()} since last snapshot`)
+          : 'Assets − Liabilities'}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--muted)">Assets</div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--accent)">$${Math.round(totalAssets()).toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Debt</div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--accent2)">$${Math.round(totalLiabilities()).toLocaleString()}</div>
+      </div>
+    </div>`;
+}
+
+// ── NET WORTH CHART ───────────────────────
+let nwChart = null;
+function renderNetworthChart() {
+  const el = document.getElementById('networth-snapshots');
+
+  if (snapshots.length < 2) {
+    document.getElementById('chart-networth').style.display = 'none';
+    el.innerHTML = `<div class="empty" style="margin-top:16px"><div class="empty-icon">📈</div>Visit this tab on different days to build your net worth history. Each visit saves a snapshot automatically.</div>`;
+    return;
+  }
+
+  document.getElementById('chart-networth').style.display = 'block';
+  const labels = snapshots.map(s => {
+    const d = new Date(s.snapshot_date + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+
+  const ctx = document.getElementById('chart-networth').getContext('2d');
+  if (nwChart) nwChart.destroy();
+  nwChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Net Worth',
+          data: snapshots.map(s => s.net_worth),
+          borderColor: '#00e5a0',
+          backgroundColor: 'rgba(0,229,160,.08)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#00e5a0',
+          pointRadius: 4
+        },
+        {
+          label: 'Assets',
+          data: snapshots.map(s => s.assets_total),
+          borderColor: '#00c9f0',
+          backgroundColor: 'transparent',
+          tension: 0.4,
+          borderDash: [4,4],
+          pointRadius: 3,
+          pointBackgroundColor: '#00c9f0'
+        },
+        {
+          label: 'Debt',
+          data: snapshots.map(s => s.liabilities_total),
+          borderColor: '#ff6b6b',
+          backgroundColor: 'transparent',
+          tension: 0.4,
+          borderDash: [4,4],
+          pointRadius: 3,
+          pointBackgroundColor: '#ff6b6b'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#6b6b8a', font: { family: 'DM Mono' }, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` $${Math.round(ctx.raw).toLocaleString()}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#6b6b8a', font: { family: 'DM Mono', size: 10 } }, grid: { color: '#2a2a3f' } },
+        y: {
+          ticks: { color: '#6b6b8a', font: { family: 'DM Mono', size: 10 }, callback: v => '$' + Math.round(v).toLocaleString() },
+          grid: { color: '#2a2a3f' }
+        }
+      }
+    }
+  });
+
+  // Snapshot history table
+  el.innerHTML = `
+    <div class="section-title" style="margin-top:22px">Snapshot History</div>
+    <div class="form-card" style="padding:0;overflow:hidden">
+      ${[...snapshots].reverse().map(s => {
+        const nw = s.net_worth;
+        const isPos = nw >= 0;
+        const d = new Date(s.snapshot_date + 'T00:00:00');
+        const dateStr = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
+          <div style="font-size:12px;color:var(--muted)">${dateStr}</div>
+          <div style="display:flex;gap:20px;font-size:12px">
+            <span style="color:var(--accent)">Assets $${Math.round(s.assets_total).toLocaleString()}</span>
+            <span style="color:var(--accent2)">Debt $${Math.round(s.liabilities_total).toLocaleString()}</span>
+            <span style="font-family:'Syne',sans-serif;font-weight:700;color:${isPos?'var(--accent)':'var(--accent2)'}">${isPos?'+':'-'}$${Math.abs(Math.round(nw)).toLocaleString()}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════
 function renderDashboard(){
@@ -801,7 +1199,8 @@ function renderDashboard(){
     <div class="stat-card"><div class="stat-label">Monthly Interest</div><div class="stat-value warning">$${interest.toFixed(0)}</div><div class="stat-sub">Cost of delay per month</div></div>
     <div class="stat-card"><div class="stat-label">Min. Payments/mo</div><div class="stat-value">$${debts.reduce((s,d)=>s+d.min,0).toLocaleString()}</div><div class="stat-sub">across all debts</div></div>`;
   const el=document.getElementById('dashboard-debts');
-  el.innerHTML=debts.length?debts.map(d=>debtCard(d,false)).join(''):`<div class="empty"><div class="empty-icon">🏦</div>Add your debts in the "My Debts" tab to get started.</div>`;
+  el.innerHTML=debts.length?debts.map(d=>debtCard(d,false)).join(''):`<div class="empty"><div class="empty-icon">🏦</div>Add your debts in the "Debts" tab to get started.</div>`;
+  renderNetworthHome();
 }
 
 // ═══════════════════════════════════════════
@@ -1601,11 +2000,13 @@ async function initApp(user) {
     renderUserPill(user);
 
     // Load all data from Supabase
-    [debts, history, reminders, budget] = await Promise.all([
+    [debts, history, reminders, budget, assets, snapshots] = await Promise.all([
       dbLoadDebts(),
       dbLoadHistory(),
       dbLoadReminders(),
-      dbLoadBudget()
+      dbLoadBudget(),
+      dbLoadAssets(),
+      dbLoadSnapshots()
     ]);
 
     // Render everything
