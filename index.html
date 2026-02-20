@@ -101,6 +101,13 @@ select option{background:var(--bg)}
 .reminder-text{font-size:13px} .reminder-date{font-size:11px;color:var(--muted);margin-top:2px}
 .reminder-del{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer} .reminder-del:hover{color:var(--accent2)}
 
+/* Sub-tabs inside Money and Progress */
+.sub-tabs{display:flex;gap:3px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:22px;width:fit-content}
+.sub-tab{background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:7px 16px;border-radius:7px;cursor:pointer;transition:all .2s}
+.sub-tab.active{background:var(--card);color:var(--accent);border:1px solid var(--border)}
+.sub-section{display:none}
+.sub-section.active{display:block;animation:fadeUp .3s ease both}
+
 .notif-banner{border-radius:12px;padding:14px 18px;font-size:13px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px}
 .notif-on{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);color:var(--accent)}
 .notif-on strong{color:var(--accent)}
@@ -254,25 +261,26 @@ canvas{display:block;width:100%}
 </div>
 
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('dashboard',this)">Dashboard</button>
-  <button class="tab" onclick="switchTab('debts',this)">My Debts</button>
-  <button class="tab" onclick="switchTab('budget',this)">Budget</button>
-  <button class="tab" onclick="switchTab('plan',this)">Plan</button>
-  <button class="tab" onclick="switchTab('charts',this)">Charts</button>
-  <button class="tab" onclick="switchTab('insights',this)">Insights</button>
-  <button class="tab" onclick="switchTab('history',this)">History</button>
+  <button class="tab active" onclick="switchTab('home',this)">Home</button>
+  <button class="tab" onclick="switchTab('debts',this)">Debts</button>
+  <button class="tab" onclick="switchTab('money',this)">Money</button>
+  <button class="tab" onclick="switchTab('progress',this)">Progress</button>
   <button class="tab" onclick="switchTab('reminders',this)">Reminders</button>
   <button class="tab" onclick="switchTab('settings',this)">⚙️</button>
 </div>
 
-<!-- DASHBOARD -->
-<div class="section active" id="tab-dashboard">
+<!-- ═══════════════════════════════════════════
+     HOME — dashboard stats + debt overview
+     ═══════════════════════════════════════════ -->
+<div class="section active" id="tab-home">
   <div class="summary-grid" id="summary-grid"></div>
-  <div class="section-title">Debt Breakdown</div>
+  <div class="section-title">Your Debts</div>
   <div id="dashboard-debts"></div>
 </div>
 
-<!-- MY DEBTS -->
+<!-- ═══════════════════════════════════════════
+     DEBTS — add debts + payoff plan
+     ═══════════════════════════════════════════ -->
 <div class="section" id="tab-debts">
   <div class="form-card">
     <div class="section-title">Add a Debt</div>
@@ -290,50 +298,16 @@ canvas{display:block;width:100%}
   </div>
   <div class="section-title">Your Debts</div>
   <div id="debt-list"></div>
-</div>
 
-<!-- BUDGET -->
-<div class="section" id="tab-budget">
+  <!-- Payoff plan lives here now, under debts -->
+  <div class="section-title" style="margin-top:8px">Payoff Plan</div>
   <div class="form-card">
-    <div class="section-title">Monthly Income</div>
-    <div class="form-grid">
-      <div class="form-group"><label>Take-Home Pay (after tax)</label><input type="number" id="income-main" placeholder="3500" min="0" oninput="saveBudgetIncome();renderBudget()"></div>
-      <div class="form-group"><label>Side Income / Other</label><input type="number" id="income-side" placeholder="0" min="0" oninput="saveBudgetIncome();renderBudget()"></div>
-    </div>
-  </div>
-  <div class="budget-layout">
-    <div class="form-card">
-      <div class="budget-col-title">🔒 Fixed Expenses <span style="font-size:10px;color:var(--muted);font-weight:400">(same every month)</span></div>
-      <div id="fixed-expenses-list"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input type="text" id="fixed-new-name" placeholder="e.g. Rent" style="flex:1;padding:7px 10px;font-size:12px">
-        <input type="number" id="fixed-new-amt" placeholder="$" min="0" style="width:78px;padding:7px 10px;font-size:12px">
-        <button class="btn btn-sm" onclick="addExpense('fixed')">+</button>
-      </div>
-    </div>
-    <div class="form-card">
-      <div class="budget-col-title">📊 Variable Expenses <span style="font-size:10px;color:var(--muted);font-weight:400">(estimates ok)</span></div>
-      <div id="variable-expenses-list"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input type="text" id="var-new-name" placeholder="e.g. Groceries" style="flex:1;padding:7px 10px;font-size:12px">
-        <input type="number" id="var-new-amt" placeholder="$" min="0" style="width:78px;padding:7px 10px;font-size:12px">
-        <button class="btn btn-sm" onclick="addExpense('variable')">+</button>
-      </div>
-    </div>
-  </div>
-  <div id="budget-output"></div>
-</div>
-
-<!-- PLAN -->
-<div class="section" id="tab-plan">
-  <div class="form-card">
-    <div class="section-title">Payoff Strategy</div>
     <div class="form-grid">
       <div class="form-group"><label>Extra Monthly Budget ($)</label><input type="number" id="extra-budget" placeholder="200" min="0" oninput="renderPlan()"></div>
       <div class="form-group"><label>Strategy</label>
         <select id="strategy" onchange="renderPlan()">
-          <option value="avalanche">Avalanche (highest interest first)</option>
-          <option value="snowball">Snowball (smallest balance first)</option>
+          <option value="avalanche">Avalanche — highest interest first</option>
+          <option value="snowball">Snowball — smallest balance first</option>
         </select>
       </div>
     </div>
@@ -341,59 +315,111 @@ canvas{display:block;width:100%}
   <div id="plan-output"></div>
 </div>
 
-<!-- CHARTS -->
-<div class="section" id="tab-charts">
-  <div class="chart-card">
-    <div class="chart-header">
-      <div><div class="chart-title">Total Debt Over Time</div><div class="chart-sub">Projected payoff simulation</div></div>
-      <div>
-        <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Extra/mo ($)</label>
-        <input type="number" id="chart-extra" placeholder="0" min="0" style="width:86px;padding:6px 10px;font-size:12px" oninput="renderCharts()">
+<!-- ═══════════════════════════════════════════
+     MONEY — budget + insights combined
+     ═══════════════════════════════════════════ -->
+<div class="section" id="tab-money">
+  <!-- Sub-nav inside Money tab -->
+  <div class="sub-tabs">
+    <button class="sub-tab active" onclick="switchSubTab('budget',this)">Budget</button>
+    <button class="sub-tab" onclick="switchSubTab('insights',this)">Insights</button>
+  </div>
+
+  <!-- BUDGET sub-section -->
+  <div class="sub-section active" id="sub-budget">
+    <div class="form-card">
+      <div class="section-title">Monthly Income</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Take-Home Pay (after tax)</label><input type="number" id="income-main" placeholder="3500" min="0" oninput="saveBudgetIncome();renderBudget()"></div>
+        <div class="form-group"><label>Side Income / Other</label><input type="number" id="income-side" placeholder="0" min="0" oninput="saveBudgetIncome();renderBudget()"></div>
       </div>
     </div>
-    <canvas id="chart-line" height="220"></canvas>
+    <div class="budget-layout">
+      <div class="form-card">
+        <div class="budget-col-title">🔒 Fixed Expenses <span style="font-size:10px;color:var(--muted);font-weight:400">(same every month)</span></div>
+        <div id="fixed-expenses-list"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input type="text" id="fixed-new-name" placeholder="e.g. Rent" style="flex:1;padding:7px 10px;font-size:12px">
+          <input type="number" id="fixed-new-amt" placeholder="$" min="0" style="width:78px;padding:7px 10px;font-size:12px">
+          <button class="btn btn-sm" onclick="addExpense('fixed')">+</button>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="budget-col-title">📊 Variable Expenses <span style="font-size:10px;color:var(--muted);font-weight:400">(estimates ok)</span></div>
+        <div id="variable-expenses-list"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input type="text" id="var-new-name" placeholder="e.g. Groceries" style="flex:1;padding:7px 10px;font-size:12px">
+          <input type="number" id="var-new-amt" placeholder="$" min="0" style="width:78px;padding:7px 10px;font-size:12px">
+          <button class="btn btn-sm" onclick="addExpense('variable')">+</button>
+        </div>
+      </div>
+    </div>
+    <div id="budget-output"></div>
   </div>
-  <div class="charts-row">
+
+  <!-- INSIGHTS sub-section -->
+  <div class="sub-section" id="sub-insights">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px">Based on your debts and budget. Updates automatically as you add data.</p>
+    <div id="insights-output"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PROGRESS — charts + payment history
+     ═══════════════════════════════════════════ -->
+<div class="section" id="tab-progress">
+  <div class="sub-tabs">
+    <button class="sub-tab active" onclick="switchSubTab('charts',this)">Charts</button>
+    <button class="sub-tab" onclick="switchSubTab('history',this)">History</button>
+  </div>
+
+  <!-- CHARTS sub-section -->
+  <div class="sub-section active" id="sub-charts">
     <div class="chart-card">
-      <div class="chart-title">Debt Breakdown</div><div class="chart-sub">Balance by debt</div>
-      <div class="donut-wrap"><canvas id="chart-donut" width="200" height="200"></canvas><div id="donut-legend"></div></div>
+      <div class="chart-header">
+        <div><div class="chart-title">Total Debt Over Time</div><div class="chart-sub">Projected payoff simulation</div></div>
+        <div>
+          <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Extra/mo ($)</label>
+          <input type="number" id="chart-extra" placeholder="0" min="0" style="width:86px;padding:6px 10px;font-size:12px" oninput="renderCharts()">
+        </div>
+      </div>
+      <canvas id="chart-line" height="220"></canvas>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Debt Breakdown</div><div class="chart-sub">Balance by debt</div>
+        <div class="donut-wrap"><canvas id="chart-donut" width="200" height="200"></canvas><div id="donut-legend"></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Monthly Payments</div><div class="chart-sub">Min payment per debt</div>
+        <canvas id="chart-bar" height="200"></canvas>
+      </div>
     </div>
     <div class="chart-card">
-      <div class="chart-title">Monthly Payments</div><div class="chart-sub">Min payment per debt</div>
-      <canvas id="chart-bar" height="200"></canvas>
+      <div class="chart-title">Payoff Timeline</div><div class="chart-sub">Estimated date each debt is eliminated</div>
+      <div id="payoff-timeline"></div>
     </div>
   </div>
-  <div class="chart-card">
-    <div class="chart-title">Payoff Timeline</div><div class="chart-sub">Estimated date each debt is eliminated</div>
-    <div id="payoff-timeline"></div>
+
+  <!-- HISTORY sub-section -->
+  <div class="sub-section" id="sub-history">
+    <div class="form-card" id="history-list"><div class="section-title">Payment History</div></div>
   </div>
 </div>
 
-<!-- INSIGHTS -->
-<div class="section" id="tab-insights">
-  <p style="font-size:12px;color:var(--muted);margin-bottom:20px">Based on your debts and budget. Insights update automatically as you add data.</p>
-  <div id="insights-output"></div>
-</div>
-
-<!-- HISTORY -->
-<div class="section" id="tab-history">
-  <div class="form-card" id="history-list"><div class="section-title">Payment History</div></div>
-</div>
-
-<!-- REMINDERS -->
+<!-- ═══════════════════════════════════════════
+     REMINDERS
+     ═══════════════════════════════════════════ -->
 <div class="section" id="tab-reminders">
   <div id="notif-status" style="margin-bottom:20px"></div>
-
-  <!-- Auto reminders from debts -->
   <div class="section-title">🔁 Monthly Debt Due Dates</div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Auto-generated from the due day you set on each debt. Updates every month automatically — nothing to configure.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Auto-generated from the due day you set on each debt. Updates every month automatically.</p>
   <div id="auto-reminder-list"></div>
-
   <div style="margin-top:28px">
-    <div class="section-title">📌 Custom One-Off Reminders</div>
+    <div class="section-title">📌 Custom Reminders</div>
     <div class="form-card">
       <div class="form-grid">
-        <div class="form-group"><label>Reminder Note</label><input type="text" id="reminder-text" placeholder="e.g. Call bank about rate reduction"></div>
+        <div class="form-group"><label>Note</label><input type="text" id="reminder-text" placeholder="e.g. Call bank about rate reduction"></div>
         <div class="form-group"><label>Date</label><input type="date" id="reminder-date"></div>
       </div>
       <button class="btn" onclick="addReminder()">+ Add Reminder</button>
@@ -402,7 +428,9 @@ canvas{display:block;width:100%}
   </div>
 </div>
 
-<!-- SETTINGS -->
+<!-- ═══════════════════════════════════════════
+     SETTINGS
+     ═══════════════════════════════════════════ -->
 <div class="section" id="tab-settings">
   <div class="form-card">
     <div class="section-title">📤 Export Your Data</div>
@@ -599,20 +627,30 @@ let payingId = null, editingId = null;
 // never rely on the global `event` object.
 // That was the root cause of the edit bug.
 // ═══════════════════════════════════════════
-function switchTab(name,btn){
+function switchTab(name, btn){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   btn.classList.add('active');
-  if(name==='dashboard') renderDashboard();
-  if(name==='debts')     renderDebtList();
-  if(name==='budget')    {renderExpenseLists();renderBudget();}
-  if(name==='plan')      renderPlan();
-  if(name==='charts')    renderCharts();
-  if(name==='insights')  renderInsights();
-  if(name==='history')   renderHistory();
+  if(name==='home')      renderDashboard();
+  if(name==='debts')     { renderDebtList(); renderPlan(); }
+  if(name==='money')     { renderExpenseLists(); renderBudget(); renderInsights(); }
+  if(name==='progress')  renderCharts();
   if(name==='reminders') renderReminders();
-  if(name==='settings')  {} // static, nothing to render
+  if(name==='settings')  {}
+}
+
+function switchSubTab(name, btn){
+  // Find the parent section and only toggle within it
+  const parent = btn.closest('.section');
+  parent.querySelectorAll('.sub-section').forEach(s=>s.classList.remove('active'));
+  parent.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
+  parent.querySelector('#sub-'+name).classList.add('active');
+  btn.classList.add('active');
+  // Trigger renders that need the element visible to draw correctly
+  if(name==='charts') renderCharts();
+  if(name==='history') renderHistory();
+  if(name==='insights') renderInsights();
 }
 
 // ═══════════════════════════════════════════
