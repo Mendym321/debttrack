@@ -1551,44 +1551,53 @@ function renderNotificationStatus() {
 // ═══════════════════════════════════════════
 async function initApp(user) {
   currentUser = user;
-  renderUserPill(user);
 
-  // Show loading spinner while we fetch data
-  document.getElementById('app').innerHTML += '';
+  // Hide login, show app immediately
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
 
-  // Load all data from Supabase in parallel
-  // Promise.all runs all four requests at the same time
-  // instead of one after another — much faster
-  [debts, history, reminders, budget] = await Promise.all([
-    dbLoadDebts(),
-    dbLoadHistory(),
-    dbLoadReminders(),
-    dbLoadBudget()
-  ]);
+  // Show a loading state in the main area
+  document.getElementById('summary-grid').innerHTML = `<div class="spinner"></div>`;
 
-  // Render the dashboard
-  renderDashboard();
-  renderExpenseLists();
+  try {
+    renderUserPill(user);
 
-  // Start service worker for notifications
-  initNotifications().then(() => {
-    scheduleNotifications();
-    renderNotificationStatus();
-  });
+    // Load all data from Supabase
+    [debts, history, reminders, budget] = await Promise.all([
+      dbLoadDebts(),
+      dbLoadHistory(),
+      dbLoadReminders(),
+      dbLoadBudget()
+    ]);
 
-  // Toast for anything due today
-  const todayStr=new Date().toISOString().split('T')[0];
-  const todayDay=new Date().getDate();
-  const customDueToday=reminders.filter(r=>r.date===todayStr);
-  const debtsDueToday=debts.filter(d=>d.due===todayDay&&d.balance>0);
-  const totalDueToday=customDueToday.length+debtsDueToday.length;
-  if(totalDueToday>0){
-    const parts=[];
-    if(debtsDueToday.length) parts.push(`${debtsDueToday.length} payment${debtsDueToday.length!==1?'s':''} due`);
-    if(customDueToday.length) parts.push(`${customDueToday.length} reminder${customDueToday.length!==1?'s':''}`);
-    setTimeout(()=>toast(`🔔 Today: ${parts.join(' · ')}!`),1000);
+    // Render everything
+    renderDashboard();
+    renderExpenseLists();
+
+    // Notifications
+    initNotifications().then(() => {
+      scheduleNotifications();
+      renderNotificationStatus();
+    });
+
+    // Toast for anything due today
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayDay = new Date().getDate();
+    const customDueToday = reminders.filter(r => r.date === todayStr);
+    const debtsDueToday  = debts.filter(d => d.due === todayDay && d.balance > 0);
+    const totalDueToday  = customDueToday.length + debtsDueToday.length;
+    if (totalDueToday > 0) {
+      const parts = [];
+      if (debtsDueToday.length)  parts.push(`${debtsDueToday.length} payment${debtsDueToday.length !== 1 ? 's' : ''} due`);
+      if (customDueToday.length) parts.push(`${customDueToday.length} reminder${customDueToday.length !== 1 ? 's' : ''}`);
+      setTimeout(() => toast(`🔔 Today: ${parts.join(' · ')}!`), 1000);
+    }
+
+  } catch(err) {
+    console.error('initApp error:', err);
+    document.getElementById('summary-grid').innerHTML =
+      `<div class="empty"><div class="empty-icon">⚠️</div>Something went wrong loading your data. <br><br>
+       <button class="btn btn-sm" onclick="location.reload()">Retry</button></div>`;
   }
 }
 
@@ -1603,22 +1612,18 @@ async function initApp(user) {
 let appInitialized = false;
 
 async function bootApp() {
-  // Step 1: Check if there's a token in the URL hash
-  // This happens right after Google redirects back
+  console.log('[boot] Starting...');
+
   const hash = window.location.hash;
   if (hash.includes('access_token')) {
-    // Parse the hash into key=value pairs
+    console.log('[boot] Found access_token in hash, calling setSession...');
     const params = new URLSearchParams(hash.substring(1));
     const accessToken  = params.get('access_token');
     const refreshToken = params.get('refresh_token');
 
     if (accessToken && refreshToken) {
-      // Tell Supabase to use these tokens
-      const { data, error } = await sb.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      });
-      // Clean the hash out of the URL bar
+      const { data, error } = await sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      console.log('[boot] setSession result:', data?.user?.email, error);
       window.history.replaceState(null, '', window.location.pathname);
       if (data?.user && !appInitialized) {
         appInitialized = true;
@@ -1628,16 +1633,16 @@ async function bootApp() {
     }
   }
 
-  // Step 2: No hash token — check for existing session
-  // (returning user who is already signed in)
-  const { data: { session } } = await sb.auth.getSession();
+  console.log('[boot] Checking existing session...');
+  const { data: { session }, error } = await sb.auth.getSession();
+  console.log('[boot] getSession result:', session?.user?.email, error);
   if (session?.user && !appInitialized) {
     appInitialized = true;
     initApp(session.user);
     return;
   }
 
-  // Step 3: No session at all — show login screen
+  console.log('[boot] No session — showing login');
   document.getElementById('login-screen').style.display = 'flex';
 }
 
