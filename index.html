@@ -191,21 +191,67 @@ canvas{display:block;width:100%}
 .toast{position:fixed;bottom:22px;right:22px;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:11px 18px;border-radius:10px;z-index:9999;transform:translateY(100px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none}
 .toast.show{transform:translateY(0);opacity:1}
 
+/* Login screen */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:44px 36px;width:100%;max-width:400px;text-align:center;animation:scaleIn .4s ease both}
+.login-box h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;background:linear-gradient(135deg,#fff 30%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.login-box p{color:var(--muted);font-size:13px;margin-bottom:32px;line-height:1.6}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;background:#fff;color:#1a1a26;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:14px 20px;cursor:pointer;transition:all .2s;margin-bottom:12px}
+.btn-google:hover{background:#f0f0f0;transform:translateY(-1px);box-shadow:0 4px 20px rgba(255,255,255,.15)}
+.btn-google svg{flex-shrink:0}
+.login-note{font-size:11px;color:var(--muted);margin-top:16px;line-height:1.6}
+
+/* User pill in header */
+.user-pill{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:5px 12px 5px 5px;cursor:pointer;transition:border-color .2s}
+.user-pill:hover{border-color:var(--accent)}
+.user-avatar{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.user-email{font-size:11px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;animation:fadeDown .6s ease both}
+
+/* Loading spinner */
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:40px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty{text-align:center;padding:44px 20px;color:var(--muted);font-size:13px}
+.empty-icon{font-size:34px;margin-bottom:10px;opacity:.4}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:11px 18px;border-radius:10px;z-index:9999;transform:translateY(100px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+
 @keyframes fadeDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
 @keyframes shimmer{to{left:200%}}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 </style>
+<!-- Supabase SDK — gives us auth + database in one library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div class="container">
 
-<header>
-  <div class="header-eyebrow">// your path to zero</div>
-  <h1>Debt Freedom<br>Tracker</h1>
-  <p>Track every dollar. Plan every payoff. Celebrate every win.</p>
-</header>
+<!-- LOGIN SCREEN — shown when not signed in -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div style="font-size:11px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:10px">// your path to zero</div>
+    <h1>Debt Freedom<br>Tracker</h1>
+    <p>Sign in to access your personal debt tracker.<br>Your data syncs across all your devices.</p>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.8l6.2 5.2C41 35.4 44 30.1 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+      Continue with Google
+    </button>
+    <div class="login-note">Your data is private and encrypted. Only you can see it.</div>
+  </div>
+</div>
+
+<div class="container" id="app" style="display:none">
+
+<div class="header-row">
+  <header style="margin-bottom:0">
+    <div class="header-eyebrow">// your path to zero</div>
+    <h1>Debt Freedom<br>Tracker</h1>
+    <p>Track every dollar. Plan every payoff. Celebrate every win.</p>
+  </header>
+  <div id="user-pill"></div>
+</div>
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('dashboard',this)">Dashboard</button>
@@ -423,21 +469,129 @@ canvas{display:block;width:100%}
 
 <script>
 // ═══════════════════════════════════════════
-// DATA — localStorage persistence
+// SUPABASE SETUP
+// supabase-js gives us two things:
+//   supabase.auth  — login/logout/session
+//   supabase.from  — read/write database tables
 // ═══════════════════════════════════════════
-function load(key,fb){try{const v=JSON.parse(localStorage.getItem(key));return v!==null?v:fb}catch{return fb}}
-function save(key,val){localStorage.setItem(key,JSON.stringify(val))}
+const SUPABASE_URL = 'https://zsaokuspdzooaihqpuod.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzYW9rdXNwZHpvb2FpaHFwdW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjM1MzgsImV4cCI6MjA4NzA5OTUzOH0.TzKaUYb-32QZ-vqTmHeG5ZTin-z_dfmUJYxRsVIsElc';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let debts     = load('debts',[]);
-let history   = load('history',[]);
-let reminders = load('reminders',[]);
-let budget    = load('budget',{
-  income:{main:'',side:''},
-  fixed:   [{name:'Rent/Mortgage',amt:0},{name:'Utilities',amt:0},{name:'Insurance',amt:0},{name:'Phone',amt:0}],
-  variable:[{name:'Groceries',amt:0},{name:'Transport/Gas',amt:0},{name:'Dining Out',amt:0},{name:'Entertainment',amt:0}]
-});
+let currentUser = null;
 
-let payingId=null, editingId=null;
+// ── AUTH ─────────────────────────────────────
+async function signInWithGoogle() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+  if (error) toast('Sign in failed: ' + error.message, true);
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  currentUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  toast('Signed out.');
+}
+
+function renderUserPill(user) {
+  const initial = (user.email || 'U')[0].toUpperCase();
+  const email = user.email || '';
+  document.getElementById('user-pill').innerHTML = `
+    <div class="user-pill" onclick="if(confirm('Sign out?'))signOut()">
+      <div class="user-avatar">${initial}</div>
+      <div class="user-email">${email}</div>
+    </div>`;
+}
+
+// ── DATABASE HELPERS ─────────────────────────
+// Each function talks to one Supabase table.
+// .select() = read, .insert() = add,
+// .update() = change, .delete() = remove
+// user_id is automatically the logged-in user.
+
+async function dbLoadDebts() {
+  const { data, error } = await sb.from('debts').select('*').order('created_at');
+  if (error) { console.error(error); return []; }
+  return data.map(r => ({
+    id: r.id, name: r.name, type: r.type,
+    originalBalance: r.original_balance, balance: r.balance,
+    rate: r.rate, min: r.min, due: r.due, paid: r.paid
+  }));
+}
+
+async function dbAddDebt(debt) {
+  const { data, error } = await sb.from('debts').insert({
+    user_id: currentUser.id, name: debt.name, type: debt.type,
+    original_balance: debt.originalBalance, balance: debt.balance,
+    rate: debt.rate, min: debt.min, due: debt.due, paid: 0
+  }).select().single();
+  if (error) { toast('Error saving debt.', true); console.error(error); return null; }
+  return { ...debt, id: data.id };
+}
+
+async function dbUpdateDebt(debt) {
+  const { error } = await sb.from('debts').update({
+    name: debt.name, type: debt.type, balance: debt.balance,
+    rate: debt.rate, min: debt.min, due: debt.due, paid: debt.paid
+  }).eq('id', debt.id);
+  if (error) { toast('Error updating debt.', true); console.error(error); }
+}
+
+async function dbDeleteDebt(id) {
+  const { error } = await sb.from('debts').delete().eq('id', id);
+  if (error) { toast('Error deleting debt.', true); console.error(error); }
+}
+
+async function dbLoadHistory() {
+  const { data, error } = await sb.from('payments').select('*').order('created_at', { ascending: false });
+  if (error) { console.error(error); return []; }
+  return data.map(r => ({ id: r.id, debtName: r.debt_name, amount: r.amount, date: r.date }));
+}
+
+async function dbAddPayment(debtName, amount, date) {
+  await sb.from('payments').insert({ user_id: currentUser.id, debt_name: debtName, amount, date });
+}
+
+async function dbLoadReminders() {
+  const { data, error } = await sb.from('reminders').select('*').order('date');
+  if (error) { console.error(error); return []; }
+  return data.map(r => ({ id: r.id, text: r.text, date: r.date }));
+}
+
+async function dbAddReminder(text, date) {
+  const { data, error } = await sb.from('reminders').insert({ user_id: currentUser.id, text, date }).select().single();
+  if (error) { toast('Error saving reminder.', true); return null; }
+  return { id: data.id, text, date };
+}
+
+async function dbDeleteReminder(id) {
+  await sb.from('reminders').delete().eq('id', id);
+}
+
+async function dbLoadBudget() {
+  const { data, error } = await sb.from('budgets').select('data').eq('user_id', currentUser.id).single();
+  if (error || !data) return {
+    income:{main:0,side:0},
+    fixed:[{name:'Rent/Mortgage',amt:0},{name:'Utilities',amt:0},{name:'Insurance',amt:0},{name:'Phone',amt:0}],
+    variable:[{name:'Groceries',amt:0},{name:'Transport/Gas',amt:0},{name:'Dining Out',amt:0},{name:'Entertainment',amt:0}]
+  };
+  return data.data;
+}
+
+async function dbSaveBudget(budgetData) {
+  await sb.from('budgets').upsert({ user_id: currentUser.id, data: budgetData, updated_at: new Date().toISOString() });
+}
+
+// ── IN-MEMORY STATE ───────────────────────────
+// After loading from Supabase we keep data in
+// memory so the UI stays snappy. We only hit
+// the database when something actually changes.
+let debts = [], history = [], reminders = [], budget = {};
+let payingId = null, editingId = null;
 
 // ═══════════════════════════════════════════
 // TABS
@@ -474,7 +628,7 @@ document.addEventListener('click',e=>{
 // ═══════════════════════════════════════════
 // ADD DEBT
 // ═══════════════════════════════════════════
-function addDebt(){
+async function addDebt(){
   const name=document.getElementById('debt-name').value.trim();
   const type=document.getElementById('debt-type').value;
   const balance=parseFloat(document.getElementById('debt-balance').value);
@@ -482,8 +636,9 @@ function addDebt(){
   const min=parseFloat(document.getElementById('debt-min').value);
   const due=parseInt(document.getElementById('debt-due').value)||1;
   if(!name||isNaN(balance)||isNaN(rate)||isNaN(min)){toast('Please fill in all fields.',true);return}
-  debts.push({id:Date.now(),name,type,originalBalance:balance,balance,rate,min,due,paid:0});
-  save('debts',debts);
+  const newDebt=await dbAddDebt({name,type,originalBalance:balance,balance,rate,min,due,paid:0});
+  if(!newDebt)return;
+  debts.push(newDebt);
   ['debt-name','debt-balance','debt-rate','debt-min','debt-due'].forEach(id=>document.getElementById(id).value='');
   renderDebtList();
   toast('Debt added!');
@@ -534,15 +689,17 @@ function openPayModal(id){
   document.getElementById('pay-amount').value=d.min;
   openModal('pay-modal');
 }
-function confirmPayment(){
+async function confirmPayment(){
   const amount=parseFloat(document.getElementById('pay-amount').value);
   if(!amount||amount<=0){toast('Enter a valid amount.',true);return}
   const d=debts.find(x=>x.id===payingId);
   const actual=Math.min(amount,d.balance);
   d.balance=Math.max(0,d.balance-actual);
   d.paid+=actual;
-  history.unshift({id:Date.now(),debtName:d.name,amount:actual,date:new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})});
-  save('debts',debts); save('history',history);
+  const dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+  await dbUpdateDebt(d);
+  await dbAddPayment(d.name, actual, dateStr);
+  history.unshift({id:Date.now(),debtName:d.name,amount:actual,date:dateStr});
   closeModal('pay-modal');
   renderDebtList();
   toast(d.balance===0?`🎉 ${d.name} is PAID OFF!`:`Payment of $${actual.toFixed(2)} recorded!`);
@@ -568,7 +725,7 @@ function openEditModal(id){
   document.getElementById('edit-due').value=d.due;
   openModal('edit-modal');
 }
-function saveEdit(){
+async function saveEdit(){
   const name=document.getElementById('edit-name').value.trim();
   const type=document.getElementById('edit-type').value;
   const balance=parseFloat(document.getElementById('edit-balance').value);
@@ -578,16 +735,15 @@ function saveEdit(){
   if(!name||isNaN(balance)||isNaN(rate)||isNaN(min)){toast('Fill in all fields.',true);return}
   const d=debts.find(x=>x.id===editingId);
   d.name=name; d.type=type; d.balance=balance; d.rate=rate; d.min=min; d.due=due;
-  // Note: d.paid and d.originalBalance stay the same — they track history
-  save('debts',debts);
+  await dbUpdateDebt(d);
   closeModal('edit-modal');
   renderDebtList();
   toast('Debt updated!');
 }
-function deleteDebt(id){
+async function deleteDebt(id){
   if(!confirm('Delete this debt? Cannot be undone.'))return;
+  await dbDeleteDebt(id);
   debts=debts.filter(d=>d.id!==id);
-  save('debts',debts);
   renderDebtList(); renderDashboard();
   toast('Debt removed.');
 }
@@ -616,7 +772,7 @@ function renderDashboard(){
 function saveBudgetIncome(){
   budget.income.main=parseFloat(document.getElementById('income-main').value)||0;
   budget.income.side=parseFloat(document.getElementById('income-side').value)||0;
-  save('budget',budget);
+  dbSaveBudget(budget); // async but fire-and-forget is fine here
 }
 function renderExpenseLists(){
   document.getElementById('income-main').value=budget.income.main||'';
@@ -636,11 +792,11 @@ function renderExpCat(type){
 function updateExp(type,i,field,val){
   const list=type==='fixed'?budget.fixed:budget.variable;
   list[i][field]=field==='amt'?parseFloat(val)||0:val;
-  save('budget',budget); renderBudget();
+  dbSaveBudget(budget); renderBudget();
 }
 function removeExp(type,i){
   if(type==='fixed')budget.fixed.splice(i,1);else budget.variable.splice(i,1);
-  save('budget',budget); renderExpCat(type); renderBudget();
+  dbSaveBudget(budget); renderExpCat(type); renderBudget();
 }
 function addExpense(type){
   const nid=type==='fixed'?'fixed-new-name':'var-new-name';
@@ -650,7 +806,7 @@ function addExpense(type){
   if(!name){toast('Enter an expense name.',true);return}
   if(type==='fixed')budget.fixed.push({name,amt});else budget.variable.push({name,amt});
   document.getElementById(nid).value=''; document.getElementById(aid).value='';
-  save('budget',budget); renderExpCat(type); renderBudget();
+  dbSaveBudget(budget); renderExpCat(type); renderBudget();
 }
 
 function estPayoffMonths(extra){
@@ -1145,18 +1301,23 @@ function renderAutoReminders(){
 }
 
 // ── CUSTOM ONE-OFF REMINDERS ──
-function addReminder(){
+async function addReminder(){
   const text=document.getElementById('reminder-text').value.trim();
   const date=document.getElementById('reminder-date').value;
   if(!text||!date){toast('Fill in text and date.',true);return}
-  reminders.push({id:Date.now(),text,date});
+  const r=await dbAddReminder(text,date);
+  if(!r)return;
+  reminders.push(r);
   reminders.sort((a,b)=>new Date(a.date)-new Date(b.date));
-  save('reminders',reminders);
   document.getElementById('reminder-text').value='';
   document.getElementById('reminder-date').value='';
   renderCustomReminders();toast('Reminder saved!');
 }
-function deleteReminder(id){reminders=reminders.filter(r=>r.id!==id);save('reminders',reminders);renderCustomReminders()}
+async function deleteReminder(id){
+  await dbDeleteReminder(id);
+  reminders=reminders.filter(r=>r.id!==id);
+  renderCustomReminders();
+}
 function renderCustomReminders(){
   const el=document.getElementById('reminder-list');
   if(!reminders.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📌</div>No custom reminders yet.</div>`;return}
@@ -1193,63 +1354,51 @@ function fmtDate(str){const d=new Date(str+'T00:00:00');return d.toLocaleDateStr
 // localStorage already uses internally.
 // ═══════════════════════════════════════════
 function exportData() {
-  const data = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    debts:     load('debts',    []),
-    history:   load('history',  []),
-    reminders: load('reminders',[]),
-    budget:    load('budget',   {})
-  };
-
-  // Create a download link in memory and click it
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `debt-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const data = { version:2, exportedAt:new Date().toISOString(), debts, history, reminders, budget };
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`debt-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click(); URL.revokeObjectURL(url);
   toast('Backup downloaded!');
 }
 
-function importData(input) {
-  const file = input.files[0];
-  if (!file) return;
-  document.getElementById('import-filename').textContent = file.name;
-
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-
-      // Validate it looks like our data
-      if (!data.debts && !data.budget) {
-        toast('File doesn\'t look like a valid backup.', true);
-        return;
+async function importData(input) {
+  const file=input.files[0]; if(!file)return;
+  document.getElementById('import-filename').textContent=file.name;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.debts&&!data.budget){toast('Not a valid backup.',true);return}
+      if(!confirm(`Import "${file.name}"? This overwrites your current data.`))return;
+      // Write everything to Supabase
+      if(data.debts){
+        await sb.from('debts').delete().eq('user_id',currentUser.id);
+        for(const d of data.debts){
+          await dbAddDebt(d);
+        }
+        debts=await dbLoadDebts();
       }
-
-      if (!confirm(`Import data from "${file.name}"? This will overwrite your current data.`)) return;
-
-      if (data.debts)     save('debts',     data.debts);
-      if (data.history)   save('history',   data.history);
-      if (data.reminders) save('reminders', data.reminders);
-      if (data.budget)    save('budget',    data.budget);
-
-      toast('Data imported! Reloading...');
-      setTimeout(() => location.reload(), 1200);
-    } catch {
-      toast('Could not read file — make sure it\'s a valid backup.', true);
-    }
+      if(data.budget){ budget=data.budget; await dbSaveBudget(budget); }
+      if(data.reminders){
+        await sb.from('reminders').delete().eq('user_id',currentUser.id);
+        for(const r of data.reminders) await dbAddReminder(r.text,r.date);
+        reminders=await dbLoadReminders();
+      }
+      toast('Data imported! Reloading...'); setTimeout(()=>location.reload(),1200);
+    }catch{toast('Could not read file.',true);}
   };
   reader.readAsText(file);
 }
 
-function clearAllData() {
-  if (!confirm('Delete ALL data permanently? This cannot be undone.\n\nExport a backup first if you want to keep anything.')) return;
-  ['debts','history','reminders','budget'].forEach(k => localStorage.removeItem(k));
-  toast('All data cleared. Reloading...');
-  setTimeout(() => location.reload(), 1200);
+async function clearAllData() {
+  if(!confirm('Delete ALL your data permanently? Cannot be undone.'))return;
+  await sb.from('debts').delete().eq('user_id',currentUser.id);
+  await sb.from('payments').delete().eq('user_id',currentUser.id);
+  await sb.from('reminders').delete().eq('user_id',currentUser.id);
+  await sb.from('budgets').delete().eq('user_id',currentUser.id);
+  toast('All data cleared. Reloading...'); setTimeout(()=>location.reload(),1200);
 }
 
 // ═══════════════════════════════════════════
@@ -1391,29 +1540,76 @@ function renderNotificationStatus() {
 }
 
 // ═══════════════════════════════════════════
-// INIT
+// INIT — Supabase auth flow
+//
+// When the page loads:
+// 1. Check if there's already a session
+//    (user was previously signed in)
+// 2. If yes → load their data and show app
+// 3. If no  → show login screen
+// 4. Listen for auth changes (sign in/out)
 // ═══════════════════════════════════════════
-renderDashboard();
-renderExpenseLists();
+async function initApp(user) {
+  currentUser = user;
+  renderUserPill(user);
 
-// Start service worker
-initNotifications().then(() => {
-  scheduleNotifications();
-  renderNotificationStatus();
+  // Show loading spinner while we fetch data
+  document.getElementById('app').innerHTML += '';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  // Load all data from Supabase in parallel
+  // Promise.all runs all four requests at the same time
+  // instead of one after another — much faster
+  [debts, history, reminders, budget] = await Promise.all([
+    dbLoadDebts(),
+    dbLoadHistory(),
+    dbLoadReminders(),
+    dbLoadBudget()
+  ]);
+
+  // Render the dashboard
+  renderDashboard();
+  renderExpenseLists();
+
+  // Start service worker for notifications
+  initNotifications().then(() => {
+    scheduleNotifications();
+    renderNotificationStatus();
+  });
+
+  // Toast for anything due today
+  const todayStr=new Date().toISOString().split('T')[0];
+  const todayDay=new Date().getDate();
+  const customDueToday=reminders.filter(r=>r.date===todayStr);
+  const debtsDueToday=debts.filter(d=>d.due===todayDay&&d.balance>0);
+  const totalDueToday=customDueToday.length+debtsDueToday.length;
+  if(totalDueToday>0){
+    const parts=[];
+    if(debtsDueToday.length) parts.push(`${debtsDueToday.length} payment${debtsDueToday.length!==1?'s':''} due`);
+    if(customDueToday.length) parts.push(`${customDueToday.length} reminder${customDueToday.length!==1?'s':''}`);
+    setTimeout(()=>toast(`🔔 Today: ${parts.join(' · ')}!`),1000);
+  }
+}
+
+// Listen for sign in / sign out events
+sb.auth.onAuthStateChange((event, session) => {
+  if (session?.user) {
+    initApp(session.user);
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
 });
 
-// In-app toast for things due today
-const todayStr=new Date().toISOString().split('T')[0];
-const todayDay=new Date().getDate();
-const customDueToday=reminders.filter(r=>r.date===todayStr);
-const debtsDueToday=debts.filter(d=>d.due===todayDay&&d.balance>0);
-const totalDueToday=customDueToday.length+debtsDueToday.length;
-if(totalDueToday>0){
-  const parts=[];
-  if(debtsDueToday.length) parts.push(`${debtsDueToday.length} payment${debtsDueToday.length!==1?'s':''} due`);
-  if(customDueToday.length) parts.push(`${customDueToday.length} reminder${customDueToday.length!==1?'s':''}`);
-  setTimeout(()=>toast(`🔔 Today: ${parts.join(' · ')}!`),1000);
-}
+// Check for existing session on page load
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session?.user) {
+    initApp(session.user);
+  }
+  // If no session, login screen is already visible by default
+});
+
 </script>
 </body>
 </html>
