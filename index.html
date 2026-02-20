@@ -227,13 +227,9 @@ canvas{display:block;width:100%}
 .timeline-bar-fill{height:100%;border-radius:99px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;color:#000;white-space:nowrap;transition:width 1s cubic-bezier(.4,0,.2,1)}
 .timeline-date{font-size:11px;color:var(--muted);width:88px;text-align:right;flex-shrink:0}
 
-.empty{text-align:center;padding:44px 20px;color:var(--muted);font-size:13px}
-.empty-icon{font-size:34px;margin-bottom:10px;opacity:.4}
-.toast{position:fixed;bottom:22px;right:22px;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:11px 18px;border-radius:10px;z-index:9999;transform:translateY(100px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none}
-.toast.show{transform:translateY(0);opacity:1}
-
 /* Login screen */
 .login-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-screen[style*="display:none"]{pointer-events:none}
 .login-box{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:44px 36px;width:100%;max-width:400px;text-align:center;animation:scaleIn .4s ease both}
 .login-box h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;background:linear-gradient(135deg,#fff 30%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
 .login-box p{color:var(--muted);font-size:13px;margin-bottom:32px;line-height:1.6}
@@ -2200,7 +2196,7 @@ async function initApp(user) {
   currentUser = user;
 
   // Hide login, show app immediately
-  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('login-screen').style.cssText = 'display:none;visibility:hidden;pointer-events:none';
   document.getElementById('app').style.display = 'block';
 
   // Show a loading state in the main area
