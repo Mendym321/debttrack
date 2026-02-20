@@ -1593,21 +1593,30 @@ async function initApp(user) {
 }
 
 // Listen for sign in / sign out events
+// onAuthStateChange fires when Supabase processes
+// the #access_token hash from the Google redirect
+let appInitialized = false;
 sb.auth.onAuthStateChange((event, session) => {
-  if (session?.user) {
+  if (session?.user && !appInitialized) {
+    appInitialized = true;
+    // Clean the token hash from the URL bar (cosmetic)
+    if (window.location.hash.includes('access_token')) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
     initApp(session.user);
-  } else {
+  } else if (!session) {
+    appInitialized = false;
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
   }
 });
 
-// Check for existing session on page load
+// Also check immediately on load for returning users
 sb.auth.getSession().then(({ data: { session } }) => {
-  if (session?.user) {
+  if (session?.user && !appInitialized) {
+    appInitialized = true;
     initApp(session.user);
   }
-  // If no session, login screen is already visible by default
 });
 
 </script>
