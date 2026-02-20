@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="./favicon.svg">
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#0a0a0f">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Debt Tracker">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -2196,6 +2196,7 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
 // 3. If no  → show login screen
 // 4. Listen for auth changes (sign in/out)
 // ═══════════════════════════════════════════
+async function initApp(user) {
   currentUser = user;
 
   // Hide login, show app immediately
