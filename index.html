@@ -1592,32 +1592,65 @@ async function initApp(user) {
   }
 }
 
-// Listen for sign in / sign out events
-// onAuthStateChange fires when Supabase processes
-// the #access_token hash from the Google redirect
+// ═══════════════════════════════════════════
+// INIT — Supabase auth flow
+//
+// The problem: after Google login, Supabase
+// puts the token in the URL hash (#access_token)
+// We need to explicitly tell Supabase to read
+// it using setSession, then show the app.
+// ═══════════════════════════════════════════
 let appInitialized = false;
-sb.auth.onAuthStateChange((event, session) => {
+
+async function bootApp() {
+  // Step 1: Check if there's a token in the URL hash
+  // This happens right after Google redirects back
+  const hash = window.location.hash;
+  if (hash.includes('access_token')) {
+    // Parse the hash into key=value pairs
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken  = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+
+    if (accessToken && refreshToken) {
+      // Tell Supabase to use these tokens
+      const { data, error } = await sb.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+      // Clean the hash out of the URL bar
+      window.history.replaceState(null, '', window.location.pathname);
+      if (data?.user && !appInitialized) {
+        appInitialized = true;
+        initApp(data.user);
+        return;
+      }
+    }
+  }
+
+  // Step 2: No hash token — check for existing session
+  // (returning user who is already signed in)
+  const { data: { session } } = await sb.auth.getSession();
   if (session?.user && !appInitialized) {
     appInitialized = true;
-    // Clean the token hash from the URL bar (cosmetic)
-    if (window.location.hash.includes('access_token')) {
-      window.history.replaceState(null, '', window.location.pathname);
-    }
     initApp(session.user);
-  } else if (!session) {
+    return;
+  }
+
+  // Step 3: No session at all — show login screen
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// Also handle sign out
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') {
     appInitialized = false;
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
   }
 });
 
-// Also check immediately on load for returning users
-sb.auth.getSession().then(({ data: { session } }) => {
-  if (session?.user && !appInitialized) {
-    appInitialized = true;
-    initApp(session.user);
-  }
-});
+bootApp();
 
 </script>
 </body>
