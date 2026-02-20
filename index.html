@@ -261,8 +261,123 @@ canvas{display:block;width:100%}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
 /* ═══════════════════════════════════════
-   MOBILE — bottom nav + responsive fixes
+   FINANCIAL COACH
    ═══════════════════════════════════════ */
+.coach-fab{
+  position:fixed;bottom:90px;right:20px;
+  width:52px;height:52px;border-radius:50%;
+  background:var(--accent);color:#000;
+  border:none;font-size:22px;cursor:pointer;
+  box-shadow:0 4px 24px rgba(0,229,160,.4);
+  z-index:7900;transition:transform .2s,box-shadow .2s;
+  display:flex;align-items:center;justify-content:center;
+}
+.coach-fab:hover{transform:scale(1.1);box-shadow:0 6px 30px rgba(0,229,160,.5)}
+
+/* On desktop, bottom is lower since no bottom nav */
+@media(min-width:681px){
+  .coach-fab{bottom:30px;right:30px}
+}
+
+.coach-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);
+  backdrop-filter:blur(4px);z-index:8100;
+}
+.coach-drawer{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--surface);border-top:1px solid var(--border);
+  border-radius:24px 24px 0 0;
+  z-index:8200;
+  display:flex;flex-direction:column;
+  max-height:82vh;
+  animation:slideUp .3s cubic-bezier(.4,0,.2,1);
+}
+@media(min-width:681px){
+  .coach-drawer{
+    left:auto;right:30px;bottom:100px;
+    width:400px;border-radius:20px;
+    max-height:600px;border:1px solid var(--border);
+  }
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+.coach-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:18px 20px 14px;border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.coach-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.coach-subtitle{font-size:11px;color:var(--muted);margin-top:2px}
+.coach-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px}
+.coach-close:hover{color:var(--text);background:var(--border)}
+
+.coach-messages{
+  flex:1;overflow-y:auto;padding:16px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.coach-msg{display:flex;flex-direction:column;gap:6px}
+.coach-msg-user{align-items:flex-end}
+.coach-msg-bot{align-items:flex-start}
+.coach-msg-bubble{
+  max-width:88%;padding:11px 14px;border-radius:14px;
+  font-size:13px;line-height:1.6;
+}
+.coach-msg-user .coach-msg-bubble{
+  background:var(--accent);color:#000;
+  border-radius:14px 14px 2px 14px;font-weight:500;
+}
+.coach-msg-bot .coach-msg-bubble{
+  background:var(--card);border:1px solid var(--border);
+  color:var(--text);border-radius:14px 14px 14px 2px;
+}
+.coach-msg-bubble strong{color:var(--accent)}
+.coach-msg-bubble .hi{color:var(--accent3)}
+.coach-msg-bubble .good{color:var(--accent)}
+.coach-msg-bubble .bad{color:var(--accent2)}
+
+.coach-suggestions{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;
+}
+.coach-suggestions button{
+  background:var(--card);border:1px solid var(--border);
+  color:var(--muted);font-family:'DM Mono',monospace;
+  font-size:11px;padding:6px 10px;border-radius:20px;
+  cursor:pointer;transition:all .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.coach-suggestions button:hover{border-color:var(--accent);color:var(--accent)}
+
+.coach-input-row{
+  display:flex;gap:8px;padding:12px 16px;
+  border-top:1px solid var(--border);flex-shrink:0;
+  padding-bottom:max(12px,env(safe-area-inset-bottom));
+}
+.coach-input-row input{
+  flex:1;background:var(--bg);border:1px solid var(--border);
+  border-radius:20px;color:var(--text);
+  font-family:'DM Mono',monospace;font-size:13px;
+  padding:10px 16px;outline:none;
+}
+.coach-input-row input:focus{border-color:var(--accent)}
+.coach-send{
+  width:40px;height:40px;border-radius:50%;
+  background:var(--accent);color:#000;border:none;
+  cursor:pointer;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;
+  transition:transform .2s;
+}
+.coach-send:hover{transform:scale(1.08)}
+
+.coach-typing{display:flex;gap:4px;padding:4px 0}
+.coach-typing span{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--muted);animation:bounce .8s infinite;
+}
+.coach-typing span:nth-child(2){animation-delay:.15s}
+.coach-typing span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
+
 .bottom-nav{display:none}
 
 @media(max-width:680px){
@@ -746,6 +861,47 @@ canvas{display:block;width:100%}
 </nav>
 
 </div><!-- /#app -->
+
+<!-- ═══════════════════════════════════════════
+     FINANCIAL COACH — floating chat panel
+     ═══════════════════════════════════════════ -->
+<div id="coach-panel" style="display:none">
+  <div class="coach-overlay" onclick="toggleCoach()"></div>
+  <div class="coach-drawer">
+    <div class="coach-header">
+      <div>
+        <div class="coach-title">💡 Financial Coach</div>
+        <div class="coach-subtitle">Asks answered using your real data</div>
+      </div>
+      <button class="coach-close" onclick="toggleCoach()">✕</button>
+    </div>
+    <div class="coach-messages" id="coach-messages">
+      <div class="coach-msg coach-msg-bot">
+        <div class="coach-msg-bubble">
+          Hey! I know your finances inside out. Ask me anything — try one of these:
+        </div>
+        <div class="coach-suggestions">
+          <button onclick="askCoach('What\'s my best plan for an extra $500?')">Best plan for $500 extra</button>
+          <button onclick="askCoach('Where can I cut spending?')">Where can I cut?</button>
+          <button onclick="askCoach('How long until I\'m debt free?')">Time to debt free</button>
+          <button onclick="askCoach('Give me a full summary')">Full summary</button>
+        </div>
+      </div>
+    </div>
+    <div class="coach-input-row">
+      <input type="text" id="coach-input" placeholder="Ask anything about your finances…"
+        onkeydown="if(event.key==='Enter')sendCoachMessage()">
+      <button class="coach-send" onclick="sendCoachMessage()">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Floating coach button -->
+<button class="coach-fab" id="coach-fab" onclick="toggleCoach()" style="display:none">
+  💡
+</button>
 
 <div class="toast" id="toast"></div>
 
@@ -2038,6 +2194,536 @@ function toast(msg,isError=false){
 //    at the right time.
 // ═══════════════════════════════════════════
 
+// ═══════════════════════════════════════════
+// FINANCIAL COACH
+//
+// A rules-based engine that reads your real
+// data and answers financial questions.
+// No API needed — all logic runs locally.
+// ═══════════════════════════════════════════
+
+let coachOpen = false;
+
+function toggleCoach() {
+  coachOpen = !coachOpen;
+  const panel = document.getElementById('coach-panel');
+  panel.style.display = coachOpen ? 'block' : 'none';
+  if (coachOpen) {
+    setTimeout(() => document.getElementById('coach-input')?.focus(), 300);
+  }
+}
+
+// Show coach FAB once user is logged in
+function showCoachFab() {
+  const fab = document.getElementById('coach-fab');
+  if (fab) fab.style.display = 'flex';
+}
+
+function sendCoachMessage() {
+  const input = document.getElementById('coach-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  askCoach(text);
+}
+
+function askCoach(question) {
+  addCoachMsg(question, 'user');
+  // Show typing indicator
+  const typingId = addTypingIndicator();
+  setTimeout(() => {
+    removeTypingIndicator(typingId);
+    const answer = runCoachEngine(question);
+    addCoachMsg(answer, 'bot');
+  }, 600);
+}
+
+function addCoachMsg(text, role) {
+  const el = document.getElementById('coach-messages');
+  const div = document.createElement('div');
+  div.className = `coach-msg coach-msg-${role}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'coach-msg-bubble';
+  bubble.innerHTML = text;
+  div.appendChild(bubble);
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function addTypingIndicator() {
+  const el = document.getElementById('coach-messages');
+  const id = 'typing-' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'coach-msg coach-msg-bot';
+  div.id = id;
+  div.innerHTML = `<div class="coach-msg-bubble"><div class="coach-typing"><span></span><span></span><span></span></div></div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  return id;
+}
+
+function removeTypingIndicator(id) {
+  document.getElementById(id)?.remove();
+}
+
+// ── COACH ENGINE ──────────────────────────
+// This is the brain. It takes a plain-English
+// question, figures out what the user is asking,
+// and generates a response using real data.
+
+function runCoachEngine(q) {
+  const ql = q.toLowerCase();
+
+  function simPayoff(extraPerMonth = 0, strategy = 'avalanche') {
+    if (!debts.length) return { months: 0, totalInterest: 0 };
+    let remaining = debts.filter(d => d.balance > 0)
+      .map(d => ({ ...d, balance: parseFloat(d.balance) }));
+    if (strategy === 'avalanche') remaining.sort((a,b) => b.rate - a.rate);
+    else remaining.sort((a,b) => a.balance - b.balance);
+    let months = 0, totalInterest = 0;
+    while (remaining.length > 0 && months < 600) {
+      months++;
+      let extra = extraPerMonth;
+      remaining = remaining.map(d => {
+        const interest = d.balance * (d.rate / 100 / 12);
+        totalInterest += interest;
+        const payment = Math.min(d.min, d.balance + interest);
+        return { ...d, balance: d.balance + interest - payment };
+      }).filter(d => d.balance > 0.01);
+      if (remaining.length > 0 && extra > 0) {
+        remaining[0].balance = Math.max(0, remaining[0].balance - extra);
+        if (remaining[0].balance < 0.01) remaining.shift();
+      }
+    }
+    return { months, totalInterest };
+  }
+
+  function monthsToDate(m) {
+    const d = new Date(); d.setMonth(d.getMonth() + m);
+    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+  function fmt(n)    { return '$' + Math.round(Math.abs(n)).toLocaleString(); }
+  function pct(a, b) { return b > 0 ? (a/b*100).toFixed(0)+'%' : '—'; }
+
+  // Budget data
+  const income      = (budget?.income?.main||0) + (budget?.income?.side||0);
+  const fixedItems  = budget?.fixed    || [];
+  const varItems    = budget?.variable || [];
+  const allItems    = [...fixedItems, ...varItems];
+  const fixedExp    = fixedItems.reduce((s,e) => s+(e.amt||0), 0);
+  const varExp      = varItems.reduce((s,e)   => s+(e.amt||0), 0);
+  const totalExp    = fixedExp + varExp;
+  const totalDebt   = debts.reduce((s,d) => s+(parseFloat(d.balance)||0), 0);
+  const totalMin    = debts.reduce((s,d) => s+(parseFloat(d.min)||0), 0);
+  const surplus     = income - totalExp - totalMin;
+  const hasBudget   = income > 0;
+  const monthlyInt  = debts.reduce((s,d) => s+(d.balance*d.rate/100/12), 0);
+
+  // Categorise expense items
+  const housingItems = allItems.filter(e => /rent|mortgage|hoa|housing/i.test(e.name));
+  const foodItems    = allItems.filter(e => /food|grocer|restaurant|eat|dining|lunch|coffee/i.test(e.name));
+  const transItems   = allItems.filter(e => /car|gas|petrol|transit|uber|lyft|commut|transport/i.test(e.name));
+  const subItems     = allItems.filter(e => /netflix|spotify|hulu|disney|amazon|subscription|gym|membership/i.test(e.name));
+  const utilItems    = allItems.filter(e => /electric|water|internet|phone|utility|utilities|bill/i.test(e.name));
+  const housingTotal = housingItems.reduce((s,e)=>s+e.amt,0);
+  const foodTotal    = foodItems.reduce((s,e)=>s+e.amt,0);
+  const transTotal   = transItems.reduce((s,e)=>s+e.amt,0);
+  const subTotal     = subItems.reduce((s,e)=>s+e.amt,0);
+  const utilTotal    = utilItems.reduce((s,e)=>s+e.amt,0);
+
+  if (!debts.length) return `You haven't added any debts yet! Head to the <strong>Debts</strong> tab and add them — then I can give you real answers.`;
+
+  // ── EXTRA MONEY PLAN ──────────────────────
+  const extraMatch = ql.match(/\$?([\d,]+)/);
+  const isMoneyQ   = /plan|put|do with|extra|have|got|best use|invest|spare|lump/.test(ql);
+  if (isMoneyQ && extraMatch) {
+    const amount = parseFloat(extraMatch[1].replace(',',''));
+    if (amount > 0 && amount < 1000000) {
+      const base         = simPayoff(0, 'avalanche');
+      const withIt       = simPayoff(amount, 'avalanche');
+      const monthsSaved  = base.months - withIt.months;
+      const intSaved     = base.totalInterest - withIt.totalInterest;
+      const topDebt      = [...debts].filter(d=>d.balance>0).sort((a,b)=>b.rate-a.rate)[0];
+      const canWipe      = debts.filter(d=>d.balance>0&&d.balance<=amount).sort((a,b)=>b.rate-a.rate);
+      const noSavings    = !assets.some(a=>/saving|cash|emergency/i.test(a.category+a.name));
+
+      let r = `Here's what I'd do with <strong>${fmt(amount)}</strong>:<br><br>`;
+      if (canWipe.length) r += `🎯 <strong>Instant win:</strong> Wipe out <strong>${canWipe[0].name}</strong> entirely (${fmt(canWipe[0].balance)} left). Frees <strong>${fmt(canWipe[0].min)}/mo</strong> = ${fmt(canWipe[0].min*12)}/year back in your pocket.<br><br>`;
+      r += `📉 <strong>Avalanche pick:</strong> Put it on <strong>${topDebt.name}</strong> (${topDebt.rate}% APR). `;
+      r += intSaved > 0 ? `Saves <strong>${fmt(intSaved)}</strong> in interest` : `Makes a meaningful dent`;
+      if (monthsSaved > 0) r += ` and cuts <strong>${monthsSaved} month${monthsSaved!==1?'s':''}</strong> off your payoff`;
+      r += `.<br><br>`;
+      if (hasBudget && surplus > 0) r += `💰 <strong>Budget context:</strong> After ${fmt(totalExp)}/mo in living costs and ${fmt(totalMin)}/mo minimums, you have ${fmt(surplus)}/mo surplus. This lump sum equals <strong>${Math.round(amount/surplus)} months of surplus payments</strong> all at once.<br><br>`;
+      r += `📅 Debt-free: <span class="good">${monthsToDate(withIt.months)}</span>`;
+      if (monthsSaved > 0) r += ` (${monthsSaved} months sooner)`;
+      if (noSavings) r += `<br><br>⚠️ <strong>Emergency fund check:</strong> I don't see a savings buffer in your assets. Consider keeping ${fmt(totalExp*2)}–${fmt(totalExp*3)} liquid before going all-in on debt.`;
+      return r;
+    }
+  }
+
+  // ── WHERE TO CUT ──────────────────────────
+  if (/cut|reduce|save more|spend less|trim|where.*save|lower/.test(ql)) {
+    if (!hasBudget) return `Add your income and expenses in <strong>Money → Budget</strong> first — then I can tell you exactly where to cut.`;
+    let r = `Here's where your money goes and what's cuttable:<br><br>`;
+    if (housingTotal) r += `🏠 <strong>Housing:</strong> ${fmt(housingTotal)}/mo (${pct(housingTotal,income)})${housingTotal/income>.35?' — <span class="bad">above 30% guideline</span>':' — looks reasonable'}<br>`;
+    if (foodTotal)    r += `🍔 <strong>Food:</strong> ${fmt(foodTotal)}/mo (${pct(foodTotal,income)})${foodTotal/income>.15?' — <span class="hi">potential to trim</span>':''}<br>`;
+    if (transTotal)   r += `🚗 <strong>Transport:</strong> ${fmt(transTotal)}/mo (${pct(transTotal,income)})<br>`;
+    if (subTotal)     r += `📱 <strong>Subscriptions:</strong> ${fmt(subTotal)}/mo${subTotal>50?' — <span class="hi">worth auditing</span> ('+subItems.map(s=>s.name).join(', ')+')':''}<br>`;
+    if (utilTotal)    r += `⚡ <strong>Utilities/bills:</strong> ${fmt(utilTotal)}/mo<br>`;
+    const other = varItems.filter(e=>[...foodItems,...transItems,...subItems,...utilItems].indexOf(e)<0);
+    if (other.length) r += `📦 <strong>Other:</strong> ${other.map(e=>e.name+' '+fmt(e.amt)).join(', ')}<br>`;
+    r += `<br><strong>Surplus: <span class="${surplus>=0?'good':'bad'}">${fmt(surplus)}/mo</span></strong><br><br>`;
+    if (subTotal>50)  r += `💡 Subscriptions = ${fmt(subTotal*12)}/year. Cutting half adds ${fmt(subTotal*0.5)} to your monthly debt attack.<br>`;
+    if (surplus<0)    r += `🚨 You're spending <span class="bad">${fmt(Math.abs(surplus))} more than you earn</span>. Closing that gap is priority #1.`;
+    else              r += `Your ${fmt(surplus)} surplus is ready to be weaponised against your highest-rate debt.`;
+    return r;
+  }
+
+  // ── MOST EXPENSIVE DEBT ───────────────────
+  if (/expensive|costing|most interest|worst debt|highest rate/.test(ql)) {
+    const sorted = [...debts].filter(d=>d.balance>0).sort((a,b)=>(b.balance*b.rate/100/12)-(a.balance*a.rate/100/12));
+    const w = sorted[0];
+    const mc = w.balance*w.rate/100/12, yc = mc*12;
+    let r = `💸 Most expensive: <strong>${w.name}</strong><br><br>`;
+    r += `• Rate: <strong>${w.rate}% APR</strong><br>`;
+    r += `• Balance: ${fmt(w.balance)}<br>`;
+    r += `• Interest this month: <span class="bad">${fmt(mc)}</span><br>`;
+    r += `• Interest this year: <span class="bad">${fmt(yc)}</span>`;
+    if (hasBudget && housingTotal) r += `<br>• That's <strong>${(yc/housingTotal).toFixed(1)} months of rent</strong> disappearing to interest`;
+    r += `<br><br>Every extra dollar here earns a guaranteed <strong>${w.rate}% return</strong>.`;
+    if (sorted.length>1) r += `<br><br>Runner-up: <strong>${sorted[1].name}</strong> — ${fmt(sorted[1].balance*sorted[1].rate/100/12)}/mo at ${sorted[1].rate}%.`;
+    return r;
+  }
+
+  // ── DEBT FREE DATE ────────────────────────
+  if (/how long|debt.?free|pay.*off.*all|when.*debt/.test(ql)) {
+    const base   = simPayoff(0, 'avalanche');
+    const best   = surplus>0 ? simPayoff(surplus,'avalanche') : null;
+    const saved  = best ? base.months - best.months : 0;
+    let r = `At minimum payments only:<br>`;
+    r += `• Debt-free: <span class="hi">${monthsToDate(base.months)}</span> (${base.months} months)<br>`;
+    r += `• Total interest: <span class="bad">${fmt(base.totalInterest)}</span><br><br>`;
+    if (hasBudget) {
+      r += `<strong>Your full picture:</strong><br>`;
+      r += `• Income: ${fmt(income)}/mo<br>`;
+      r += `• Living costs: ${fmt(totalExp)}/mo`;
+      if (housingTotal) r += ` (incl. ${fmt(housingTotal)} housing)`;
+      r += `<br>• Debt minimums: ${fmt(totalMin)}/mo<br>`;
+      r += `• <strong>Free cash: <span class="${surplus>=0?'good':'bad'}">${fmt(surplus)}/mo</span></strong><br><br>`;
+      if (surplus>0 && best) r += `💡 Put your ${fmt(surplus)} surplus toward debt: debt-free <span class="good">${monthsToDate(best.months)}</span> — <strong>${saved} months sooner</strong>, saving <span class="good">${fmt(base.totalInterest-best.totalInterest)}</span>.`;
+      else if (surplus<=0) r += `⚠️ Expenses exceed income by <span class="bad">${fmt(Math.abs(surplus))}/mo</span>. Fixing that gap in <strong>Money → Budget</strong> is step one.`;
+    }
+    return r;
+  }
+
+  // ── CAN I AFFORD X ────────────────────────
+  const affordM = ql.match(/(?:afford|take on|add|handle)\s+\$?([\d,]+)/);
+  if (affordM) {
+    const amt = parseFloat(affordM[1].replace(',',''));
+    const newS = surplus - amt;
+    const ctx  = hasBudget ? `Your ${fmt(income)}/mo covers ${fmt(totalExp)} in living costs + ${fmt(totalMin)} minimums = <strong>${fmt(surplus)}/mo free</strong>.` : `Set up your budget in <strong>Money → Budget</strong> for a full picture.`;
+    if (newS >= 0) return `✅ Yes — you can absorb <strong>${fmt(amt)}/mo</strong>.<br><br>${ctx}<br><br>You'd have <strong>${fmt(newS)}/mo</strong> left after. Worth comparing to putting it on your ${[...debts].sort((a,b)=>b.rate-a.rate)[0]?.rate}% APR debt instead.`;
+    return `❌ That's a stretch. ${ctx}<br><br>Adding ${fmt(amt)}/mo would leave you <span class="bad">${fmt(Math.abs(newS))} short</span>/mo. Check <strong>Money → Budget</strong> to find cuts first.`;
+  }
+
+  // ── SUBSCRIPTIONS ─────────────────────────
+  if (/subscription|netflix|spotify|cancel/.test(ql)) {
+    if (!subTotal) return `I don't see subscriptions in your budget yet. Add them in <strong>Money → Budget</strong>.`;
+    const base = simPayoff(0,'avalanche'), withSubs = simPayoff(subTotal,'avalanche');
+    return `📱 Subscriptions: <strong>${fmt(subTotal)}/mo</strong> = <span class="bad">${fmt(subTotal*12)}/year</span><br><br>${subItems.map(s=>`• ${s.name}: ${fmt(s.amt)}/mo`).join('<br>')}<br><br>If you cancelled everything and put it toward debt:<br>• Debt-free <strong>${base.months-withSubs.months} months sooner</strong><br>• Interest saved: <span class="good">${fmt(base.totalInterest-withSubs.totalInterest)}</span>`;
+  }
+
+  // ── AVALANCHE VS SNOWBALL ─────────────────
+  if (/avalanche|snowball|strategy|method/.test(ql)) {
+    const extra = Math.max(surplus,0);
+    const av = simPayoff(extra,'avalanche'), sb = simPayoff(extra,'snowball');
+    const diff = sb.totalInterest - av.totalInterest;
+    const topR = [...debts].filter(d=>d.balance>0).sort((a,b)=>b.rate-a.rate)[0];
+    const topS = [...debts].filter(d=>d.balance>0).sort((a,b)=>a.balance-b.balance)[0];
+    return `<strong>Avalanche vs Snowball — your numbers:</strong><br><br>📉 Avalanche (hit <strong>${topR?.name}</strong> first at ${topR?.rate}% APR):<br>• Debt-free: <strong>${monthsToDate(av.months)}</strong><br>• Interest: <span class="bad">${fmt(av.totalInterest)}</span><br><br>🏔️ Snowball (hit <strong>${topS?.name}</strong> first at ${fmt(topS?.balance)}):<br>• Debt-free: <strong>${monthsToDate(sb.months)}</strong><br>• Interest: <span class="bad">${fmt(sb.totalInterest)}</span><br><br>${diff>100?`💰 Avalanche saves <strong class="good">${fmt(diff)}</strong> — the better math.`:`They're very close for your debts — pick what keeps you motivated.`}${extra>0?`<br><br>Both include your ${fmt(extra)}/mo surplus.`:''}`;
+  }
+
+  // ── NET WORTH ─────────────────────────────
+  if (/net worth|what am i worth|asset/.test(ql)) {
+    const nw = netWorth(), ta = totalAssets(), pos = nw>=0;
+    return `📊 Financial snapshot:<br><br>💰 Assets: <span class="good">${fmt(ta)}</span><br>💳 Debt: <span class="bad">${fmt(totalDebt)}</span><br>📈 Net worth: <span class="${pos?'good':'bad'}">${pos?'+':'-'}${fmt(nw)}</span><br><br>${pos?`✅ You own more than you owe.`:`Every debt payment directly raises this number. Track it in <strong>Progress → Net Worth</strong>.`}`;
+  }
+
+  // ── FULL SUMMARY ──────────────────────────
+  if (/summary|overview|situation|where am i|full picture|status/.test(ql)) {
+    const base = simPayoff(0,'avalanche'), best = simPayoff(Math.max(surplus,0),'avalanche');
+    const topD = [...debts].sort((a,b)=>(b.balance*b.rate/100/12)-(a.balance*a.rate/100/12))[0];
+    let r = `<strong>💳 Debt (${debts.length} total)</strong><br>`;
+    r += `• Total: <span class="bad">${fmt(totalDebt)}</span> · Minimums: ${fmt(totalMin)}/mo · Interest: <span class="bad">${fmt(monthlyInt)}/mo</span><br>`;
+    r += `• Debt-free (minimums): <span class="hi">${monthsToDate(base.months)}</span><br><br>`;
+    if (hasBudget) {
+      r += `<strong>💰 Budget</strong><br>`;
+      r += `• Income: ${fmt(income)}<br>`;
+      if (housingTotal) r += `• Housing: ${fmt(housingTotal)} (${pct(housingTotal,income)})<br>`;
+      if (foodTotal)    r += `• Food: ${fmt(foodTotal)}<br>`;
+      if (transTotal)   r += `• Transport: ${fmt(transTotal)}<br>`;
+      if (subTotal)     r += `• Subscriptions: ${fmt(subTotal)}<br>`;
+      if (utilTotal)    r += `• Utilities: ${fmt(utilTotal)}<br>`;
+      const other = totalExp-housingTotal-foodTotal-transTotal-subTotal-utilTotal;
+      if (other>0) r += `• Other: ${fmt(other)}<br>`;
+      r += `• Debt minimums: ${fmt(totalMin)}<br>`;
+      r += `• <strong>Free cash: <span class="${surplus>=0?'good':'bad'}">${fmt(surplus)}/mo</span></strong><br><br>`;
+    }
+    r += `<strong>📈 Net worth:</strong> Assets <span class="good">${fmt(totalAssets())}</span> − Debt <span class="bad">${fmt(totalDebt)}</span> = <span class="${netWorth()>=0?'good':'bad'}">${fmt(netWorth())}</span><br><br>`;
+    r += `<strong>🎯 Top priority:</strong> Attack <strong>${topD.name}</strong> (${topD.rate}% APR, ${fmt(topD.balance*topD.rate/100/12)}/mo in interest)`;
+    if (surplus>0 && best.months<base.months) r += `<br><br>💡 Your ${fmt(surplus)}/mo surplus gets you debt-free <strong>${base.months-best.months} months sooner</strong> and saves <span class="good">${fmt(base.totalInterest-best.totalInterest)}</span>.`;
+    return r;
+  }
+
+  // ── BUDGET BREAKDOWN ─────────────────────
+  if (/budget|spend|expenses|income|surplus|leftover|cost of living|breakdown/.test(ql)) {
+    if (!hasBudget) return `You haven't set up your budget yet. Go to <strong>Money → Budget</strong> and add your income and expenses.`;
+    let r = `<strong>Monthly budget:</strong><br><br>📥 Income: <strong>${fmt(income)}</strong><br><br>`;
+    if (fixedItems.length) { r += `🔒 <strong>Fixed (${fmt(fixedExp)}):</strong><br>`; fixedItems.forEach(e=>{r+=`• ${e.name}: ${fmt(e.amt)}<br>`;}); r+=`<br>`; }
+    if (varItems.length)   { r += `📊 <strong>Variable (${fmt(varExp)}):</strong><br>`;  varItems.forEach(e=>{r+=`• ${e.name}: ${fmt(e.amt)}<br>`;}); r+=`<br>`; }
+    r += `💳 Debt minimums: ${fmt(totalMin)} (${pct(totalMin,income)} of income)<br>`;
+    r += `<br><strong>Surplus: <span class="${surplus>=0?'good':'bad'}">${fmt(surplus)}/mo</span></strong><br><br>`;
+    if (surplus>200)     r += `✅ Real breathing room. Route <strong>${fmt(surplus)}</strong> to debt every month.`;
+    else if (surplus>=0) r += `⚠️ Thin margin — one unexpected bill goes to credit. A small buffer helps.`;
+    else                 r += `🚨 <span class="bad">${fmt(Math.abs(surplus))} over budget</span>/mo. Find and cut that gap first.`;
+    return r;
+  }
+
+  // ── FALLBACK ──────────────────────────────
+  return `I can answer questions using your real budget and debt data. Try:<br><br>• <em>"Best plan for $1,000 extra"</em><br>• <em>"Where can I cut spending?"</em><br>• <em>"How long until debt free?"</em><br>• <em>"What are my subscriptions costing me?"</em><br>• <em>"Can I afford $300 more per month?"</em><br>• <em>"Full summary"</em>`;
+}
+    if (!debts.length) return null;
+    let remaining = debts
+      .filter(d => d.balance > 0)
+      .map(d => ({ ...d, balance: parseFloat(d.balance) }));
+
+    if (strategy === 'avalanche') remaining.sort((a,b) => b.rate - a.rate);
+    else remaining.sort((a,b) => a.balance - b.balance);
+
+    let months = 0;
+    let totalInterest = 0;
+    const maxMonths = 600;
+
+    while (remaining.length > 0 && months < maxMonths) {
+      months++;
+      let extra = extraPerMonth;
+
+      // Apply interest and minimums
+      remaining = remaining.map(d => {
+        const interest = d.balance * (d.rate / 100 / 12);
+        totalInterest += interest;
+        let payment = Math.min(d.min, d.balance + interest);
+        return { ...d, balance: d.balance + interest - payment };
+      }).filter(d => d.balance > 0.01);
+
+      // Apply extra to first debt
+      if (remaining.length > 0 && extra > 0) {
+        remaining[0].balance = Math.max(0, remaining[0].balance - extra);
+        if (remaining[0].balance < 0.01) remaining.shift();
+      }
+    }
+    return { months, totalInterest };
+  }
+
+  function monthsToDate(months) {
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
+
+  const totalDebt = debts.reduce((s,d) => s+d.balance, 0);
+  const totalMin  = debts.reduce((s,d) => s+d.min, 0);
+  const monthlyInterest = debts.reduce((s,d) => s+(d.balance*d.rate/100/12), 0);
+  const income = (budget?.income?.main||0) + (budget?.income?.side||0);
+  const fixedExp = (budget?.fixed||[]).reduce((s,e) => s+e.amt, 0);
+  const varExp   = (budget?.variable||[]).reduce((s,e) => s+e.amt, 0);
+  const surplus  = income - fixedExp - varExp - totalMin;
+
+  // ── No debts guard ──
+  if (!debts.length) {
+    return `You haven't added any debts yet! Head to the <strong>Debts</strong> tab and add them — then I can give you real answers.`;
+  }
+
+  // ── BEST PLAN FOR EXTRA MONEY ──
+  const extraMatch = ql.match(/\$?([\d,]+)\s*(dollar|buck|extra|spare)?/);
+  if ((ql.includes('plan') || ql.includes('put') || ql.includes('best') || ql.includes('do with') || ql.includes('extra') || ql.includes('have')) && extraMatch) {
+    const amount = parseFloat(extraMatch[1].replace(',',''));
+    if (amount > 0 && amount < 1000000) {
+      const avResult = simPayoff(amount, 'avalanche');
+      const sbResult = simPayoff(amount, 'snowball');
+      const avBase   = simPayoff(0, 'avalanche');
+
+      // Best single debt to hit
+      const byRate = [...debts].filter(d=>d.balance>0).sort((a,b)=>b.rate-a.rate);
+      const topDebt = byRate[0];
+      const monthsSaved = avBase.months - avResult.months;
+      const interestSaved = avBase.totalInterest - avResult.totalInterest;
+
+      // Can it wipe out any debt entirely?
+      const canWipe = debts.filter(d => d.balance > 0 && d.balance <= amount)
+                           .sort((a,b) => b.rate - a.rate);
+
+      let resp = `Here's what I'd do with <strong>${fmt(amount)}</strong>:<br><br>`;
+
+      if (canWipe.length) {
+        resp += `🎯 <strong>Quick win:</strong> You can completely eliminate <strong>${canWipe[0].name}</strong> (${fmt(canWipe[0].balance)} left). That frees up <strong>${fmt(canWipe[0].min)}/mo</strong> permanently.<br><br>`;
+      }
+
+      resp += `📉 <strong>Avalanche (saves most money):</strong> Put it on <strong>${topDebt.name}</strong> (${topDebt.rate}% APR). `;
+      resp += `Saves you <strong>${fmt(interestSaved)}</strong> in interest and cuts <strong>${monthsSaved} month${monthsSaved!==1?'s':''}</strong> off your payoff date.<br><br>`;
+
+      resp += `🏔️ <strong>Debt-free date with this payment:</strong> <span class="good">${monthsToDate(avResult.months)}</span> (${avResult.months} months)<br>`;
+      resp += `vs. minimums only: ${monthsToDate(avBase.months)} (${avBase.months} months)`;
+
+      return resp;
+    }
+  }
+
+  // ── MOST EXPENSIVE DEBT ──
+  if (ql.includes('expensive') || ql.includes('costing') || ql.includes('most interest') || ql.includes('worst debt')) {
+    const sorted = [...debts].filter(d=>d.balance>0).sort((a,b) => (b.balance*b.rate/100/12) - (a.balance*a.rate/100/12));
+    const worst = sorted[0];
+    const monthlyCost = worst.balance * worst.rate / 100 / 12;
+    const yearlyCost  = monthlyCost * 12;
+    return `💸 Your most expensive debt is <strong>${worst.name}</strong>.<br><br>
+At <strong>${worst.rate}% APR</strong> on a ${fmt(worst.balance)} balance, it's costing you:<br>
+• <span class="bad">${fmt(monthlyCost)}/month</span> in interest<br>
+• <span class="bad">${fmt(yearlyCost)}/year</span> just to stand still<br><br>
+Every month you don't pay this down, you're handing over ${fmt(monthlyCost)}. Hit this one first.`;
+  }
+
+  // ── HOW LONG UNTIL DEBT FREE ──
+  if (ql.includes('how long') || ql.includes('debt free') || ql.includes('pay off') || ql.includes('payoff') || ql.includes('when') && ql.includes('debt')) {
+    const base = simPayoff(0, 'avalanche');
+    const withSurplus = surplus > 0 ? simPayoff(surplus, 'avalanche') : null;
+
+    let resp = `At your current minimum payments:<br>
+• <strong>Debt free: <span class="hi">${monthsToDate(base.months)}</span></strong> (${base.months} months)<br>
+• Total interest paid: <span class="bad">${fmt(base.totalInterest)}</span><br><br>`;
+
+    if (withSurplus && withSurplus.months < base.months) {
+      const saved = base.months - withSurplus.months;
+      resp += `💡 You have a budget surplus of <strong>${fmt(surplus)}/mo</strong>. If you put that toward debt:<br>
+• Debt free: <span class="good">${monthsToDate(withSurplus.months)}</span> (${saved} months sooner)<br>
+• Interest saved: <span class="good">${fmt(base.totalInterest - withSurplus.totalInterest)}</span>`;
+    } else if (surplus <= 0) {
+      resp += `⚠️ Your budget shows no surplus right now. Check the <strong>Money</strong> tab to find areas to cut.`;
+    }
+    return resp;
+  }
+
+  // ── CAN I AFFORD X ──
+  const affordMatch = ql.match(/afford\s+\$?([\d,]+)/);
+  if (affordMatch || (ql.includes('afford') || ql.includes('take on') || ql.includes('add'))) {
+    const amt = affordMatch ? parseFloat(affordMatch[1].replace(',','')) : null;
+    if (amt) {
+      const newSurplus = surplus - amt;
+      if (newSurplus >= 0) {
+        return `✅ Yes, you can afford an extra <strong>${fmt(amt)}/mo</strong>.<br><br>
+Your current budget surplus is <strong>${fmt(surplus)}/mo</strong>. After adding this payment, you'd have <strong>${fmt(newSurplus)}/mo</strong> left over.<br><br>
+💡 Consider putting it toward your highest-rate debt instead of a new payment.`;
+      } else {
+        return `❌ That might be a stretch. Your current budget surplus is only <strong>${fmt(surplus)}/mo</strong> — adding <strong>${fmt(amt)}/mo</strong> would leave you <span class="bad">${fmt(Math.abs(newSurplus))} short</span> each month.<br><br>
+Check the <strong>Money</strong> tab to see where you could cut.`;
+      }
+    }
+  }
+
+  // ── AVALANCHE VS SNOWBALL ──
+  if (ql.includes('avalanche') || ql.includes('snowball') || ql.includes('strategy') || ql.includes('method')) {
+    const av = simPayoff(surplus > 0 ? surplus : 0, 'avalanche');
+    const sb = simPayoff(surplus > 0 ? surplus : 0, 'snowball');
+    const interestDiff = sb.totalInterest - av.totalInterest;
+    const monthsDiff   = sb.months - av.months;
+    const quickWin = [...debts].filter(d=>d.balance>0).sort((a,b)=>a.balance-b.balance)[0];
+
+    return `<strong>Avalanche</strong> (highest rate first) vs <strong>Snowball</strong> (smallest balance first):<br><br>
+📊 With your debts:<br>
+• Avalanche: debt free <strong>${monthsToDate(av.months)}</strong>, total interest <span class="bad">${fmt(av.totalInterest)}</span><br>
+• Snowball: debt free <strong>${monthsToDate(sb.months)}</strong>, total interest <span class="bad">${fmt(sb.totalInterest)}</span><br><br>
+${interestDiff > 0
+  ? `💰 Avalanche saves you <strong class="good">${fmt(interestDiff)}</strong> — that's the mathematically better choice.`
+  : `They're very close for your debts.`}<br><br>
+🏆 First snowball win: eliminate <strong>${quickWin.name}</strong> (${fmt(quickWin.balance)}) and free up ${fmt(quickWin.min)}/mo.`;
+  }
+
+  // ── NET WORTH QUESTION ──
+  if (ql.includes('net worth') || ql.includes('worth') || ql.includes('asset')) {
+    const nw  = netWorth();
+    const ta  = totalAssets();
+    const tl  = totalLiabilities();
+    const pos = nw >= 0;
+    return `Your current financial snapshot:<br><br>
+💰 <strong>Assets:</strong> <span class="good">${fmt(ta)}</span><br>
+💳 <strong>Debt:</strong> <span class="bad">${fmt(tl)}</span><br>
+📊 <strong>Net Worth:</strong> <span class="${pos?'good':'bad'}">${fmt(nw)}</span><br><br>
+${pos
+  ? `✅ Your assets exceed your debt — you have positive net worth!`
+  : `You owe more than you own right now, but every payment changes that. Track it in <strong>Progress → Net Worth</strong>.`}`;
+  }
+
+  // ── INTEREST / COST QUESTION ──
+  if (ql.includes('interest') || ql.includes('cost') || ql.includes('rate')) {
+    const base = simPayoff(0, 'avalanche');
+    return `Here's what your debt is costing you:<br><br>
+• Monthly interest drain: <span class="bad">${fmt(monthlyInterest)}</span><br>
+• Annual interest cost: <span class="bad">${fmt(monthlyInterest*12)}</span><br>
+• Total interest if you only pay minimums: <span class="bad">${fmt(base.totalInterest)}</span><br><br>
+${debts.sort((a,b)=>(b.balance*b.rate/100/12)-(a.balance*a.rate/100/12)).slice(0,3).map(d=>
+  `• <strong>${d.name}</strong>: ${fmt(d.balance*d.rate/100/12)}/mo at ${d.rate}%`
+).join('<br>')}`;
+  }
+
+  // ── SUMMARY ──
+  if (ql.includes('summary') || ql.includes('overview') || ql.includes('situation') || ql.includes('where am i') || ql.includes('status')) {
+    const base = simPayoff(0, 'avalanche');
+    const withExtra = surplus > 0 ? simPayoff(surplus, 'avalanche') : null;
+    const worstDebt = [...debts].sort((a,b) => (b.balance*b.rate/100/12)-(a.balance*a.rate/100/12))[0];
+
+    return `Here's your full financial picture:<br><br>
+<strong>💳 Debt</strong><br>
+• Total owed: <span class="bad">${fmt(totalDebt)}</span> across ${debts.length} debt${debts.length!==1?'s':''}<br>
+• Monthly minimums: ${fmt(totalMin)}<br>
+• Monthly interest: <span class="bad">${fmt(monthlyInterest)}</span><br>
+• Debt-free date (minimums): <span class="hi">${monthsToDate(base.months)}</span><br><br>
+<strong>💰 Budget</strong><br>
+${income > 0 ? `• Income: ${fmt(income)}/mo<br>• Monthly surplus: <span class="${surplus>=0?'good':'bad'}">${fmt(surplus)}</span><br>` : '• Add income in Money tab for budget analysis<br>'}
+<strong>📊 Net Worth</strong><br>
+• Assets: <span class="good">${fmt(totalAssets())}</span> | Debt: <span class="bad">${fmt(totalDebt)}</span> | Net: <span class="${netWorth()>=0?'good':'bad'}">${fmt(netWorth())}</span><br><br>
+<strong>🎯 Top priority:</strong> ${worstDebt ? `Attack <strong>${worstDebt.name}</strong> (${worstDebt.rate}% APR, costing ${fmt(worstDebt.balance*worstDebt.rate/100/12)}/mo)` : 'Keep going!'}
+${withExtra && withExtra.months < base.months ? `<br><br>💡 Putting your ${fmt(surplus)} surplus toward debt gets you free <strong>${base.months - withExtra.months} months sooner</strong>.` : ''}`;
+  }
+
+  // ── BUDGET QUESTION ──
+  if (ql.includes('budget') || ql.includes('spend') || ql.includes('income') || ql.includes('surplus') || ql.includes('leftover')) {
+    if (!income) return `You haven't set up your budget yet. Go to <strong>Money → Budget</strong> and add your income and expenses — then I can analyze your spending.`;
+    const debtPct = income > 0 ? (totalMin / income * 100).toFixed(0) : 0;
+    return `Your budget breakdown:<br><br>
+• Income: <strong>${fmt(income)}/mo</strong><br>
+• Fixed expenses: ${fmt(fixedExp)}<br>
+• Variable expenses: ${fmt(varExp)}<br>
+• Debt minimums: ${fmt(totalMin)} (${debtPct}% of income)<br>
+• <strong>Surplus: <span class="${surplus>=0?'good':'bad'}">${fmt(surplus)}/mo</span></strong><br><br>
+${surplus > 0
+  ? `✅ You have money left over. Even putting <strong>${fmt(Math.round(surplus/2))}</strong> of that toward debt accelerates your payoff significantly.`
+  : surplus === 0
+  ? `⚠️ You're exactly breaking even. Any unexpected expense goes to credit.`
+  : `❌ You're <span class="bad">${fmt(Math.abs(surplus))}/mo in the red</span>. Check Money tab to find cuts.`}`;
+  }
+
+  // ── FALLBACK ──
+  return `I can help with questions like:<br><br>
+• <em>"Best plan for $500 extra"</em><br>
+• <em>"Which debt is costing me most?"</em><br>
+• <em>"How long until I'm debt free?"</em><br>
+• <em>"Can I afford $200 more per month?"</em><br>
+• <em>"Avalanche vs snowball for my debts"</em><br>
+• <em>"Give me a full summary"</em><br><br>
+Try one of those!`;
+}
+
 let swRegistration = null;
 
 async function initNotifications() {
@@ -2218,6 +2904,7 @@ async function initApp(user) {
     // Render everything
     renderDashboard();
     renderExpenseLists();
+    showCoachFab();
 
     // Notifications
     initNotifications().then(() => {
