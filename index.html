@@ -1006,9 +1006,9 @@ function debtCard(d,showActions){
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
     </div>
     ${showActions?`<div class="debt-actions">
-      <button class="btn btn-sm" onclick="openPayModal(${d.id})">+ Payment</button>
-      <button class="btn btn-sm btn-warn" onclick="openEditModal(${d.id})">✏️ Edit</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteDebt(${d.id})">Delete</button>
+      <button class="btn btn-sm" onclick="openPayModal('${d.id}')">+ Payment</button>
+      <button class="btn btn-sm btn-warn" onclick="openEditModal('${d.id}')">✏️ Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteDebt('${d.id}')">Delete</button>
     </div>`:''}
   </div>`;
 }
