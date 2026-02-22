@@ -1021,7 +1021,12 @@ async function dbLoadBudget() {
 }
 
 async function dbSaveBudget(budgetData) {
-  await sb.from('budgets').upsert({ user_id: currentUser.id, data: budgetData, updated_at: new Date().toISOString() });
+  const { data: existing } = await sb.from('budgets').select('user_id').eq('user_id', currentUser.id).single();
+  if (existing) {
+    await sb.from('budgets').update({ data: budgetData, updated_at: new Date().toISOString() }).eq('user_id', currentUser.id);
+  } else {
+    await sb.from('budgets').insert({ user_id: currentUser.id, data: budgetData, updated_at: new Date().toISOString() });
+  }
 }
 
 async function dbLoadAssets() {
@@ -1593,7 +1598,6 @@ function estPayoffMonths(extra){
 }
 
 function renderBudget(){
-  saveBudgetIncome();
   const totalIncome=budget.income.main+budget.income.side;
   const totalFixed=budget.fixed.reduce((s,x)=>s+(parseFloat(x.amt)||0),0);
   const totalVariable=budget.variable.reduce((s,x)=>s+(parseFloat(x.amt)||0),0);
