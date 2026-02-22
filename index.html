@@ -1054,15 +1054,17 @@ async function dbLoadSnapshots() {
 
 async function dbSaveSnapshot(assetsTotal, liabilitiesTotal) {
   const netWorth = assetsTotal - liabilitiesTotal;
-  const today = new Date().toISOString().split('T')[0];
-  // Upsert so we only keep one snapshot per day
-  await sb.from('networth_snapshots').upsert({
+  const today = new Date().toISOString().split("T")[0];
+  console.log("[snapshot] Saving:", { assetsTotal, liabilitiesTotal, netWorth, today, user: currentUser?.id });
+  const { data, error } = await sb.from("networth_snapshots").upsert({
     user_id: currentUser.id,
     assets_total: assetsTotal,
     liabilities_total: liabilitiesTotal,
     net_worth: netWorth,
     snapshot_date: today
-  }, { onConflict: 'user_id,snapshot_date' });
+  }, { onConflict: "user_id,snapshot_date" });
+  if (error) console.error("[snapshot] ERROR:", error);
+  else console.log("[snapshot] Success, data:", data);
 }
 
 // ── IN-MEMORY STATE ───────────────────────────
