@@ -31,9 +31,9 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .user-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .user-email{font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.tab-bar{display:flex;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;margin:16px 20px 0}
-.tab-btn{flex:1;background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:9px 4px;border-radius:8px;cursor:pointer;transition:all .2s}
-.tab-btn.active{background:var(--card);color:var(--accent);border:1px solid var(--border);box-shadow:var(--glow)}
+
+
+
 .tab-content{display:none;padding:20px}
 .tab-content.active{display:block;animation:fadeUp .35s ease both}
 
@@ -188,12 +188,6 @@ select option{background:var(--bg)}
     <h1>// debt free</h1>
     <div id="user-pill"></div>
   </div>
-  <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('home',this)">Home</button>
-    <button class="tab-btn" onclick="switchTab('plan',this)">Plan</button>
-    <button class="tab-btn" onclick="switchTab('money',this)">Money</button>
-    <button class="tab-btn" onclick="switchTab('settings',this)">⚙️</button>
-  </div>
 
   <!-- HOME -->
   <div class="tab-content active" id="tab-home">
@@ -231,8 +225,9 @@ select option{background:var(--bg)}
 
   <!-- MONEY -->
   <div class="tab-content" id="tab-money">
-    <div style="display:flex;gap:6px;margin-bottom:20px">
+    <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
       <button class="btn btn-sm" id="mtab-budget" onclick="switchMoneyTab('budget')">Budget</button>
+      <button class="btn btn-sm btn-ghost" id="mtab-spending" onclick="switchMoneyTab('spending')">Spending</button>
       <button class="btn btn-sm btn-ghost" id="mtab-assets" onclick="switchMoneyTab('assets')">Net Worth</button>
       <button class="btn btn-sm btn-ghost" id="mtab-insights" onclick="switchMoneyTab('insights')">Insights</button>
     </div>
@@ -284,6 +279,9 @@ select option{background:var(--bg)}
     <div id="msub-insights" style="display:none">
       <div id="insights-output"></div>
     </div>
+    <div id="msub-spending" style="display:none">
+      <div id="spending-output"></div>
+    </div>
   </div>
 
   <!-- SETTINGS -->
@@ -309,16 +307,16 @@ select option{background:var(--bg)}
 </div>
 
 <nav class="bottom-nav" id="bottom-nav" style="display:none">
-  <button class="nav-btn active" onclick="switchTab('home',null);setNav(this)">
+  <button class="nav-btn active" data-tab="home" onclick="setNav(this)">
     <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>Home
   </button>
-  <button class="nav-btn" onclick="switchTab('plan',null);setNav(this)">
+  <button class="nav-btn" data-tab="plan" onclick="setNav(this)">
     <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Plan
   </button>
-  <button class="nav-btn" onclick="switchTab('money',null);setNav(this)">
+  <button class="nav-btn" data-tab="money" onclick="setNav(this)">
     <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Money
   </button>
-  <button class="nav-btn" onclick="switchTab('settings',null);setNav(this)">
+  <button class="nav-btn" data-tab="settings" onclick="setNav(this)">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings
   </button>
 </nav>
@@ -467,10 +465,24 @@ async function dbDeleteDebt(id) { await sb.from('debts').delete().eq('id', id); 
 async function dbLoadHistory() {
   const { data, error } = await sb.from('payments').select('*').order('created_at', {ascending:false});
   if (error) { console.error(error); return []; }
-  return data.map(r => ({ id:r.id, debtName:r.debt_name, amount:r.amount, date:r.date }));
+  return data.map(r => ({
+    id:r.id, debtName:r.debt_name, amount:r.amount, date:r.date,
+    type:r.type||'payment', balanceBefore:r.balance_before||0, balanceAfter:r.balance_after||0
+  }));
 }
-async function dbAddPayment(debtName, amount, date) {
-  await sb.from('payments').insert({ user_id:currentUser.id, debt_name:debtName, amount, date });
+// Record a payment (balance went DOWN — you paid)
+async function dbAddPayment(debtName, amount, date, balanceBefore, balanceAfter) {
+  await sb.from('payments').insert({
+    user_id:currentUser.id, debt_name:debtName, amount, date,
+    type:'payment', balance_before:balanceBefore, balance_after:balanceAfter
+  });
+}
+// Record a charge (balance went UP — you spent)
+async function dbAddCharge(debtName, amount, date, balanceBefore, balanceAfter) {
+  await sb.from('payments').insert({
+    user_id:currentUser.id, debt_name:debtName, amount, date,
+    type:'charge', balance_before:balanceBefore, balance_after:balanceAfter
+  });
 }
 async function dbLoadBudget() {
   const { data, error } = await sb.from('budgets').select('data').eq('user_id', currentUser.id).single();
@@ -517,11 +529,9 @@ async function autoSnapshot() {
 // ═══════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════
-function switchTab(name, btn) {
+function switchTab(name) {
   document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
-  if (btn) btn.classList.add('active');
   if (name==='home')  renderHome();
   if (name==='plan')  renderPlan();
   if (name==='money') renderMoney();
@@ -529,6 +539,8 @@ function switchTab(name, btn) {
 function setNav(btn) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  if (tab) switchTab(tab);
 }
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -556,12 +568,40 @@ function renderHome() {
     return;
   }
 
-  const today = new Date().getDate();
+  const now = new Date();
+  const todayDate = now.getDate();
+  const todayMs = now.getTime();
+
   el.innerHTML = debts.map(d => {
-    const daysUntil = d.due >= today ? d.due-today : (31-today+d.due);
-    const dueBadge  = daysUntil===0 ? `<span class="due-badge today">● Due Today — $${d.min} min</span>`
-      : daysUntil<=5 ? `<span class="due-badge soon">⏰ Due in ${daysUntil}d — $${d.min} min</span>`
-      : `<span class="due-badge ok">📅 Due day ${d.due} — $${d.min}/mo min</span>`;
+    // ── SMART DUE DATE LOGIC ──────────────────────────────
+    // Find the most recent payment for this debt in the last 35 days
+    const recentPayment = history.find(h =>
+      h.debtName === d.name &&
+      (todayMs - new Date(h.date).getTime()) < 35 * 24 * 60 * 60 * 1000
+    );
+
+    // Work out when this billing cycle's due date is
+    // (current month if not passed, next month if it has)
+    let dueDate = new Date(now.getFullYear(), now.getMonth(), d.due);
+    if (dueDate < now) dueDate = new Date(now.getFullYear(), now.getMonth()+1, d.due);
+    const daysUntil = Math.ceil((dueDate - now) / (1000*60*60*24));
+
+    // If there's been a payment since the last due date, this cycle is already paid
+    let dueBadge;
+    if (d.balance <= 0) {
+      dueBadge = `<span class="due-badge ok">✅ Paid off!</span>`;
+    } else if (recentPayment) {
+      const paid = new Date(recentPayment.date);
+      const paidAgo = Math.round((todayMs - paid.getTime()) / (1000*60*60*24));
+      dueBadge = `<span class="due-badge ok">✓ Paid ${paidAgo===0?'today':paidAgo+'d ago'} — next due day ${d.due}</span>`;
+    } else if (daysUntil === 0) {
+      dueBadge = `<span class="due-badge today">● Due Today — $${d.min} min</span>`;
+    } else if (daysUntil <= 5) {
+      dueBadge = `<span class="due-badge soon">⏰ Due in ${daysUntil}d — $${d.min} min</span>`;
+    } else {
+      dueBadge = `<span class="due-badge ok">📅 Due day ${d.due} — $${d.min}/mo min</span>`;
+    }
+
     const dpct = Math.min(100, Math.round((d.paid/(d.originalBalance||1))*100));
     const intPerMo = (d.balance*d.rate/100/12).toFixed(0);
     return `<div class="debt-card">
@@ -608,24 +648,31 @@ async function confirmBalanceUpdate() {
   const val = parseFloat(document.getElementById('balance-input').value);
   if (isNaN(val) || val < 0) { toast('Enter a valid balance.', true); return; }
   const d = debts.find(x => x.id===updatingBalanceId);
-  const old = d.balance;
+  const oldBal = d.balance;
+  const diff = val - oldBal;
+  const dateStr = new Date().toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
   d.balance = val;
-  if (val < old) {
-    // Balance went down = payment happened. Track it automatically.
-    const paid = old - val;
+
+  if (diff < 0) {
+    // Balance went DOWN — payment/paydown
+    const paid = Math.abs(diff);
     d.paid += paid;
-    const dateStr = new Date().toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
-    await dbAddPayment(d.name, paid, dateStr);
-    history.unshift({ id:Date.now(), debtName:d.name, amount:paid, date:dateStr });
+    await dbAddPayment(d.name, paid, dateStr, oldBal, val);
+    history.unshift({ id:Date.now(), debtName:d.name, amount:paid, date:dateStr, type:'payment', balanceBefore:oldBal, balanceAfter:val });
+  } else if (diff > 0) {
+    // Balance went UP — new spending on the card
+    const spent = diff;
+    await dbAddCharge(d.name, spent, dateStr, oldBal, val);
+    history.unshift({ id:Date.now(), debtName:d.name, amount:spent, date:dateStr, type:'charge', balanceBefore:oldBal, balanceAfter:val });
   }
-  // Balance could also go UP (new spending). We track that as a balance increase only.
+
   await dbUpdateDebt(d);
   await autoSnapshot();
   closeModal('modal-balance');
   renderHome();
   if (val===0) toast(`🎉 ${d.name} is PAID OFF!`);
-  else if (val > old) toast(`Balance updated — up $${Math.round(val-old).toLocaleString()} from new spending`);
-  else toast(`Balance updated to $${Math.round(val).toLocaleString()}`);
+  else if (diff > 0) toast(`+$${Math.round(diff).toLocaleString()} in new spending recorded`);
+  else toast(`$${Math.round(Math.abs(diff)).toLocaleString()} payment recorded`);
 }
 
 // ── BULK CHECK-IN ───────────────────────────
@@ -650,12 +697,18 @@ async function saveCheckin() {
     const id = input.dataset.debtId;
     const d = debts.find(x => x.id===id);
     if (!d) continue;
-    const old = d.balance;
+    const oldBal = d.balance;
+    const diff = val - oldBal;
+    const dateStr = new Date().toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
     d.balance = val;
-    if (val < old) {
-      d.paid += (old - val);
-      const dateStr = new Date().toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
-      await dbAddPayment(d.name, old-val, dateStr);
+    if (diff < 0) {
+      const paid = Math.abs(diff);
+      d.paid += paid;
+      await dbAddPayment(d.name, paid, dateStr, oldBal, val);
+      history.unshift({ id:Date.now(), debtName:d.name, amount:paid, date:dateStr, type:'payment', balanceBefore:oldBal, balanceAfter:val });
+    } else if (diff > 0) {
+      await dbAddCharge(d.name, diff, dateStr, oldBal, val);
+      history.unshift({ id:Date.now(), debtName:d.name, amount:diff, date:dateStr, type:'charge', balanceBefore:oldBal, balanceAfter:val });
     }
     await dbUpdateDebt(d);
     changed++;
@@ -685,8 +738,9 @@ async function confirmPayment() {
   d.paid += actual;
   const dateStr = new Date().toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
   await dbUpdateDebt(d);
-  await dbAddPayment(d.name, actual, dateStr);
-  history.unshift({ id:Date.now(), debtName:d.name, amount:actual, date:dateStr });
+  const balBefore = d.balance + actual; // reconstruct pre-payment balance
+  await dbAddPayment(d.name, actual, dateStr, balBefore, d.balance);
+  history.unshift({ id:Date.now(), debtName:d.name, amount:actual, date:dateStr, type:'payment', balanceBefore:balBefore, balanceAfter:d.balance });
   await autoSnapshot();
   closeModal('modal-payment');
   renderHome();
@@ -851,13 +905,14 @@ function renderPlan() {
 // MONEY
 // ═══════════════════════════════════════════
 function switchMoneyTab(name) {
-  ['budget','assets','insights'].forEach(t => {
+  ['budget','spending','assets','insights'].forEach(t => {
     document.getElementById('msub-'+t).style.display = t===name ? 'block' : 'none';
     const btn = document.getElementById('mtab-'+t);
     if (btn) btn.className = t===name ? 'btn btn-sm' : 'btn btn-sm btn-ghost';
   });
   if (name==='assets')   renderAssets();
   if (name==='insights') renderInsights();
+  if (name==='spending') renderSpending();
 }
 
 function renderMoney() {
@@ -1040,6 +1095,174 @@ function renderInsights() {
         <div class="insight-text">${ins.text}</div>
       </div>
     </div>`).join('') : `<div class="empty"><div class="empty-icon">🎉</div>No major issues found. Keep going.</div>`;
+}
+
+
+// ═══════════════════════════════════════════
+// SPENDING ANALYTICS
+// Reads the full transaction history to build
+// a real financial picture: how much spent vs
+// paid per card, per month, net trend, projections
+// ═══════════════════════════════════════════
+function renderSpending() {
+  const el = document.getElementById('spending-output');
+  if (!history.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📊</div>No transaction history yet.<br><br>Start updating your balances weekly and the app will build your spending picture automatically.</div>`;
+    return;
+  }
+
+  const now = new Date();
+
+  // ── Parse all transactions into months ──
+  // Build a map: { 'YYYY-MM': { cardName: { spent, paid } } }
+  const monthly = {};
+  const cardTotals = {}; // lifetime per card
+
+  history.forEach(tx => {
+    const d = new Date(tx.date);
+    if (isNaN(d)) return;
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if (!monthly[key]) monthly[key] = {};
+    if (!monthly[key][tx.debtName]) monthly[key][tx.debtName] = { spent:0, paid:0 };
+    if (!cardTotals[tx.debtName]) cardTotals[tx.debtName] = { spent:0, paid:0, txCount:0 };
+
+    if (tx.type === 'charge') {
+      monthly[key][tx.debtName].spent += tx.amount;
+      cardTotals[tx.debtName].spent += tx.amount;
+    } else {
+      monthly[key][tx.debtName].paid += tx.amount;
+      cardTotals[tx.debtName].paid += tx.amount;
+    }
+    cardTotals[tx.debtName].txCount++;
+  });
+
+  const months = Object.keys(monthly).sort();
+  const recentMonths = months.slice(-6); // last 6 months
+
+  // ── Overall monthly averages ──
+  const monthlySpend = recentMonths.map(m =>
+    Object.values(monthly[m]||{}).reduce((s,c) => s+c.spent, 0)
+  );
+  const monthlyPaid = recentMonths.map(m =>
+    Object.values(monthly[m]||{}).reduce((s,c) => s+c.paid, 0)
+  );
+  const avgSpend = monthlySpend.length ? monthlySpend.reduce((a,b)=>a+b,0)/monthlySpend.length : 0;
+  const avgPaid  = monthlyPaid.length  ? monthlyPaid.reduce((a,b)=>a+b,0)/monthlyPaid.length   : 0;
+  const netMonthly = avgPaid - avgSpend; // positive = winning, negative = losing ground
+
+  // ── This month so far ──
+  const thisKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const thisMonth = monthly[thisKey] || {};
+  const thisSpent = Object.values(thisMonth).reduce((s,c) => s+c.spent, 0);
+  const thisPaid  = Object.values(thisMonth).reduce((s,c) => s+c.paid, 0);
+
+  // ── Projection: if avg spend continues, where are balances in 3/6/12 months? ──
+  const totalDebt = debts.reduce((s,d) => s+d.balance, 0);
+  const proj3  = Math.max(0, totalDebt - (netMonthly * 3));
+  const proj6  = Math.max(0, totalDebt - (netMonthly * 6));
+  const proj12 = Math.max(0, totalDebt - (netMonthly * 12));
+
+  // ── Trend: is spending going up or down? ──
+  let trendText = '', trendColor = 'var(--muted)';
+  if (monthlySpend.length >= 2) {
+    const first = monthlySpend.slice(0,3).reduce((a,b)=>a+b,0)/Math.min(3,monthlySpend.length);
+    const last  = monthlySpend.slice(-3).reduce((a,b)=>a+b,0)/Math.min(3,monthlySpend.length);
+    const delta = last - first;
+    if (Math.abs(delta) < 20) { trendText = 'Spending is stable'; trendColor = 'var(--muted)'; }
+    else if (delta > 0) { trendText = `Spending up $${Math.round(delta)}/mo over last 3mo`; trendColor = 'var(--red)'; }
+    else { trendText = `Spending down $${Math.round(Math.abs(delta))}/mo over last 3mo`; trendColor = 'var(--accent)'; }
+  }
+
+  // ── Build HTML ──
+  const fmtD = n => '$' + Math.round(Math.abs(n)).toLocaleString();
+
+  let html = '';
+
+  // This month card
+  html += `<div class="card">
+    <div class="card-title">This Month</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:4px">Spent</div>
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--red)">${fmtD(thisSpent)}</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:4px">Paid</div>
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--accent)">${fmtD(thisPaid)}</div>
+      </div>
+    </div>
+    ${thisPaid > thisSpent && thisSpent > 0 ? `<div style="margin-top:12px;text-align:center;font-size:12px;color:var(--accent)">✅ Paying more than spending this month — debt is dropping</div>` :
+      thisSpent > thisPaid && thisSpent > 0 ? `<div style="margin-top:12px;text-align:center;font-size:12px;color:var(--red)">⚠️ Spending more than paying — debt is growing</div>` : ''}
+  </div>`;
+
+  // Averages + net trend
+  html += `<div class="card">
+    <div class="card-title">Monthly Averages (last ${recentMonths.length} months)</div>
+    <div style="margin-top:12px">
+      <div class="bar-row">
+        <div class="bar-label">Avg spent</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${avgSpend>0?Math.min(100,(avgSpend/(avgSpend+avgPaid+1))*100):0}%;background:var(--red)"></div></div>
+        <div class="bar-pct" style="width:70px;color:var(--red)">${fmtD(avgSpend)}/mo</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Avg paid</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${avgPaid>0?Math.min(100,(avgPaid/(avgSpend+avgPaid+1))*100):0}%;background:var(--accent)"></div></div>
+        <div class="bar-pct" style="width:70px;color:var(--accent)">${fmtD(avgPaid)}/mo</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-align:center">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Net Monthly</div>
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:${netMonthly>=0?'var(--accent)':'var(--red)'}">${netMonthly>=0?'+':'-'}${fmtD(netMonthly)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">${netMonthly>=0?'reducing debt on average':'adding to debt on average'}</div>
+    </div>
+    ${trendText ? `<div style="margin-top:10px;font-size:12px;text-align:center;color:${trendColor}">${trendText}</div>` : ''}
+  </div>`;
+
+  // Per-card breakdown
+  const cards = Object.entries(cardTotals).sort((a,b) => b[1].spent-a[1].spent);
+  if (cards.length) {
+    html += `<div class="card"><div class="card-title">Per Card Breakdown</div>`;
+    cards.forEach(([name, data]) => {
+      const net = data.paid - data.spent;
+      html += `
+        <div style="padding:14px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+            <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700">${name}</div>
+            <div style="font-size:11px;color:${net>=0?'var(--accent)':'var(--red)'}">${net>=0?'↓ paying down':'↑ growing'}</div>
+          </div>
+          <div style="display:flex;gap:16px;font-size:12px">
+            <div><span style="color:var(--muted)">Spent: </span><span style="color:var(--red)">${fmtD(data.spent)}</span></div>
+            <div><span style="color:var(--muted)">Paid: </span><span style="color:var(--accent)">${fmtD(data.paid)}</span></div>
+            <div><span style="color:var(--muted)">Net: </span><span style="color:${net>=0?'var(--accent)':'var(--red)'}">${net>=0?'+':'-'}${fmtD(net)}</span></div>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Projection
+  if (recentMonths.length >= 2) {
+    html += `<div class="card">
+      <div class="card-title">Projection (at current rate)</div>
+      <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">3 months</div>
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:${proj3<totalDebt?'var(--accent)':'var(--red)'}">${fmtD(proj3)}</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">6 months</div>
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:${proj6<totalDebt?'var(--accent)':'var(--red)'}">${fmtD(proj6)}</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">12 months</div>
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:${proj12<totalDebt?'var(--accent)':'var(--red)'}">${fmtD(proj12)}</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center">Based on avg net ${netMonthly>=0?'payment':'spend'} of ${fmtD(Math.abs(netMonthly))}/mo</div>
+    </div>`;
+  }
+
+  el.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════
