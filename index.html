@@ -591,20 +591,41 @@ function renderHome() {
       (todayMidnight - parseDate(h.date)) < 40 * 24 * 60 * 60 * 1000
     );
 
-    // Work out the actual next due date (with month)
-    let dueDate = new Date(now.getFullYear(), now.getMonth(), d.due);
-    if (dueDate <= todayMidnight) dueDate = new Date(now.getFullYear(), now.getMonth()+1, d.due);
-    const daysUntil = Math.round((dueDate - todayMidnight) / (1000*60*60*24));
-    const dueDateStr = dueDate.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+    // ── BILLING CYCLE LOGIC ─────────────────────────────────
+    // Step 1: figure out the most recent past due date (last time payment was expected)
+    // Step 2: check if a payment was made after that date (= this cycle is paid)
+    // Step 3: if paid, next due date is one full month after the past due date
+    //         if not paid, next due date is the upcoming one
 
-    // Was this cycle already paid? Find if payment was made AFTER the previous due date
-    let prevDueDate = new Date(now.getFullYear(), now.getMonth(), d.due);
-    if (prevDueDate > todayMidnight) prevDueDate = new Date(now.getFullYear(), now.getMonth()-1, d.due);
+    // Most recent past due date (could be this month if due day already passed)
+    let lastDueDate = new Date(now.getFullYear(), now.getMonth(), d.due);
+    if (lastDueDate > todayMidnight) {
+      // Due day hasn't come yet this month — last due date was previous month
+      lastDueDate = new Date(now.getFullYear(), now.getMonth() - 1, d.due);
+    }
+
+    // Has a payment been made since the last due date?
     const paidThisCycle = history.find(h =>
       h.debtName === d.name &&
       h.type !== 'charge' &&
-      parseDate(h.date) >= prevDueDate
+      parseDate(h.date) >= lastDueDate
     );
+
+    // Next due date depends on whether this cycle is already paid:
+    // - Paid: next due is one month after the last due date (already covered this cycle)
+    // - Not paid: next due is the upcoming due date
+    let nextDueDate;
+    if (paidThisCycle) {
+      // This cycle is covered — next payment is due one month after last due date
+      nextDueDate = new Date(lastDueDate.getFullYear(), lastDueDate.getMonth() + 1, d.due);
+    } else {
+      // Not yet paid — due date is the upcoming one
+      nextDueDate = new Date(now.getFullYear(), now.getMonth(), d.due);
+      if (nextDueDate < todayMidnight) nextDueDate = new Date(now.getFullYear(), now.getMonth() + 1, d.due);
+    }
+
+    const daysUntil = Math.round((nextDueDate - todayMidnight) / (1000*60*60*24));
+    const dueDateStr = nextDueDate.toLocaleDateString('en-US', {month:'short', day:'numeric'});
 
     let dueBadge;
     if (d.balance <= 0) {
@@ -615,7 +636,7 @@ function renderHome() {
       const paidWhen = paidAgo === 0 ? 'today' : paidAgo === 1 ? 'yesterday' : `${paidAgo}d ago`;
       dueBadge = `<span class="due-badge ok">✓ Paid ${paidWhen} — next due ${dueDateStr}</span>`;
     } else if (daysUntil === 0) {
-      dueBadge = `<span class="due-badge today">● Due Today ${dueDateStr} — $${d.min} min</span>`;
+      dueBadge = `<span class="due-badge today">● Due Today — $${d.min} min</span>`;
     } else if (daysUntil <= 5) {
       dueBadge = `<span class="due-badge soon">⏰ Due ${dueDateStr} — $${d.min} min</span>`;
     } else {
