@@ -2,1446 +2,884 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Debt Freedom Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Finance Tracker</title>
 <link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#0a0a0f">
+<meta name="theme-color" content="#0f0f13">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Debt Tracker">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg:#0a0a0f; --surface:#12121a; --card:#1a1a26; --border:#2a2a3f;
-  --accent:#00e5a0; --red:#ff6b6b; --yellow:#ffd166;
-  --text:#e8e8f0; --muted:#6b6b8a;
-  --glow:0 0 20px rgba(0,229,160,.15);
-  --radius:16px;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-
-.app-wrap{max-width:520px;margin:0 auto;padding:0 0 80px;position:relative;z-index:1}
-.top-bar{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0}
-.top-bar h1{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-#user-pill .user-pill{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:4px 10px 4px 4px;cursor:pointer}
-.user-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
-.user-email{font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-
-
-
-.tab-content{display:none;padding:20px}
-.tab-content.active{display:block;animation:fadeUp .35s ease both}
-
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:12px;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent)}
-.card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-
-.hero{text-align:center;padding:28px 20px 20px}
-.hero-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.hero-amount{font-family:'Syne',sans-serif;font-size:52px;font-weight:800;color:var(--red);line-height:1;margin-bottom:6px}
-.hero-sub{font-size:12px;color:var(--muted)}
-.hero-bar-wrap{margin:18px 20px 0;background:var(--surface);border:1px solid var(--border);border-radius:99px;height:8px;overflow:hidden}
-.hero-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),#00c9f0);transition:width 1s cubic-bezier(.4,0,.2,1)}
-
-.debt-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:10px;transition:border-color .2s;animation:fadeUp .3s ease both}
-.debt-card:hover{border-color:rgba(0,229,160,.3)}
-.debt-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
-.debt-card-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
-.debt-progress{margin-bottom:12px}
-.debt-progress-info{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:5px}
-.debt-progress-bar{height:5px;background:var(--bg);border-radius:99px;overflow:hidden}
-.debt-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),#00c9f0);transition:width .8s cubic-bezier(.4,0,.2,1)}
-.due-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:20px;border:1px solid;margin-bottom:12px}
-.due-badge.ok{color:var(--muted);border-color:var(--border)}
-.due-badge.soon{color:var(--yellow);border-color:var(--yellow)}
-.due-badge.today{color:var(--red);border-color:var(--red)}
-.debt-actions{display:flex;gap:7px;flex-wrap:wrap}
-
-.btn{background:var(--accent);color:#000;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;padding:10px 18px;cursor:pointer;text-transform:uppercase;transition:all .2s;white-space:nowrap}
-.btn:hover{background:#00ffb3;transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,229,160,.3)}
-.btn-sm{padding:7px 13px;font-size:11px;border-radius:6px}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
-.btn-ghost:hover{border-color:var(--accent);color:var(--accent);background:transparent;box-shadow:none;transform:none}
-.btn-danger{background:var(--red);color:#fff}
-.btn-danger:hover{background:#ff8585;box-shadow:0 4px 16px rgba(255,107,107,.3);transform:translateY(-1px)}
-.btn-warn{background:var(--yellow);color:#000}
-.btn-full{width:100%;text-align:center;display:block}
-
-.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
-.form-group label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
-input,select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:16px;padding:10px 12px;outline:none;width:100%;transition:border-color .2s}
-input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,160,.1)}
-select option{background:var(--bg)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-.section-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
-
-.plan-step{display:flex;align-items:flex-start;gap:14px;padding:16px 0;border-bottom:1px solid var(--border)}
-.plan-step:last-child{border-bottom:none}
-.step-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
-.step-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:3px}
-.step-detail{font-size:11px;color:var(--muted);line-height:1.65}
-.step-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:20px;border:1px solid var(--accent);color:var(--accent);display:inline-block;margin-top:5px}
-
-.budget-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.budget-stat{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px}
-.budget-stat-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.budget-stat-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:700}
-.budget-stat-val.green{color:var(--accent)}
-.budget-stat-val.red{color:var(--red)}
-.budget-stat-val.yellow{color:var(--yellow)}
-.exp-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:10px}
-.exp-row:last-child{border-bottom:none}
-.exp-name{font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.exp-del{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;flex-shrink:0;line-height:1}
-.exp-del:hover{color:var(--red)}
-.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.bar-label{font-size:11px;color:var(--muted);width:80px;flex-shrink:0}
-.bar-track{flex:1;height:8px;background:var(--bg);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
-.bar-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-.bar-pct{font-size:11px;color:var(--muted);width:32px;text-align:right;flex-shrink:0}
-
-.insight{display:flex;gap:12px;align-items:flex-start;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:12px;margin-bottom:8px}
-.insight.good{border-left:3px solid var(--accent)}
-.insight.warn{border-left:3px solid var(--yellow)}
-.insight.bad{border-left:3px solid var(--red)}
-.insight-icon{font-size:18px;flex-shrink:0;margin-top:1px}
-.insight-text{font-size:12px;color:var(--muted);line-height:1.65;margin-top:3px}
-.insight-text strong{color:var(--text)}
-
-.nw-hero{text-align:center;padding:20px 0 16px}
-.nw-hero-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.nw-hero-val{font-family:'Syne',sans-serif;font-size:38px;font-weight:800}
-.nw-hero-val.pos{color:var(--accent)}
-.nw-hero-val.neg{color:var(--red)}
-.nw-row{display:flex;gap:12px;margin-top:14px}
-.nw-col{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
-.nw-col-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.nw-col-val{font-family:'Syne',sans-serif;font-size:18px;font-weight:700}
-.asset-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:12px}
-.asset-row:last-child{border-bottom:none}
-.asset-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
-.asset-cat{font-size:10px;color:var(--muted);margin-top:2px}
-.asset-val-input{width:100px;text-align:right;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent);background:transparent;border:none;border-bottom:1px solid var(--border);padding:2px 4px;outline:none;font-size:16px}
-.asset-val-input:focus{border-bottom-color:var(--accent)}
-
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);z-index:9000;align-items:flex-end;justify-content:center}
-.modal-overlay.open{display:flex;animation:fadeUp .2s ease both}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:28px 24px max(28px,env(safe-area-inset-bottom));width:100%;max-width:520px;animation:slideUp .25s ease both}
-@media(min-width:521px){.modal-overlay{align-items:center;padding:20px}.modal{border-radius:20px;max-width:440px}}
-.modal h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px}
-.modal p{color:var(--muted);font-size:12px;margin-bottom:20px;line-height:1.6}
-.modal-actions{display:flex;gap:10px;margin-top:18px}
-.drag-handle{width:36px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 20px}
-
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(18,18,26,.97);border-top:1px solid var(--border);z-index:8000;display:flex;padding:6px 0 max(10px,env(safe-area-inset-bottom));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.5px;text-transform:uppercase;padding:5px 2px;cursor:pointer;transition:color .15s;-webkit-tap-highlight-color:transparent;user-select:none}
-.nav-btn.active{color:var(--accent)}
-.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
-.nav-btn.active svg{transform:translateY(-1px)}
-
-.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
-.empty-icon{font-size:32px;margin-bottom:10px;opacity:.4}
-.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:11px 20px;border-radius:10px;z-index:9999;opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+:root{--bg:#0f0f13;--surface:#17171d;--card:#1e1e27;--border:#2c2c3a;--border2:#383848;--accent:#7c6aff;--accent2:#a594ff;--green:#34d399;--red:#f87171;--amber:#fbbf24;--text:#f0f0f8;--text2:#9898b8;--text3:#5a5a78;--r:14px;--r2:10px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%;overflow:hidden}
+body{height:100%;background:var(--bg);color:var(--text);font-family:"Outfit",sans-serif;overflow:hidden;position:fixed;width:100%}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .25s}
+.screen.active{opacity:1;pointer-events:all}
+#screen-users{background:var(--bg);align-items:center;justify-content:center}
+.user-select-wrap{width:100%;max-width:400px;padding:32px 24px}
+.app-wordmark{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--text3);margin-bottom:52px;text-align:center}
+.user-select-title{font-size:30px;font-weight:700;margin-bottom:8px;text-align:center}
+.user-select-sub{font-size:14px;color:var(--text2);margin-bottom:40px;text-align:center}
+.user-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.user-card{background:var(--card);border:2px solid var(--border);border-radius:20px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.user-card::before{content:"";position:absolute;inset:0;opacity:0;transition:opacity .2s}
+.user-card.mendel::before{background:linear-gradient(135deg,rgba(124,106,255,.15),transparent)}
+.user-card.rivka::before{background:linear-gradient(135deg,rgba(52,211,153,.15),transparent)}
+.user-card:active{transform:scale(.97)}
+.user-card.mendel:hover{border-color:var(--accent);box-shadow:0 8px 32px rgba(124,106,255,.2)}
+.user-card.rivka:hover{border-color:var(--green);box-shadow:0 8px 32px rgba(52,211,153,.2)}
+.user-card:hover::before{opacity:1}
+.uavatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;margin:0 auto 14px;position:relative;z-index:1}
+.user-card.mendel .uavatar{background:linear-gradient(135deg,#7c6aff,#a594ff);color:#fff}
+.user-card.rivka .uavatar{background:linear-gradient(135deg,#34d399,#6ee7b7);color:#065f46}
+.user-card-name{font-size:17px;font-weight:700;position:relative;z-index:1}
+.user-card-sub{font-size:12px;color:var(--text2);margin-top:4px;position:relative;z-index:1}
+#screen-login{background:var(--bg);align-items:center;justify-content:center}
+.login-box{width:100%;max-width:380px;padding:24px;text-align:center}
+.login-box h1{font-size:26px;font-weight:700;margin-bottom:6px}
+.login-box p{color:var(--text2);font-size:14px;margin-bottom:32px;line-height:1.6}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;background:#fff;color:#111;border:none;border-radius:12px;font-family:"Outfit",sans-serif;font-size:15px;font-weight:600;padding:15px 20px;cursor:pointer}
+#screen-app{background:var(--bg)}
+.app-shell{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.app-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0;flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:10px}
+.uav-sm{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;cursor:pointer;flex-shrink:0}
+.uav-sm.mendel{background:linear-gradient(135deg,#7c6aff,#a594ff);color:#fff}
+.uav-sm.rivka{background:linear-gradient(135deg,#34d399,#6ee7b7);color:#065f46}
+.hdr-name{font-size:15px;font-weight:600}
+.hdr-date{font-size:11px;color:var(--text3);font-family:"JetBrains Mono",monospace}
+.tab-area{flex:1;overflow:hidden;position:relative}
+.tab-pane{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transition:opacity .2s;padding:16px 20px 20px;-webkit-overflow-scrolling:touch}
+.tab-pane.active{opacity:1;pointer-events:all}
+.tab-pane::-webkit-scrollbar{display:none}
+.bottom-nav{display:flex;border-top:1px solid var(--border);background:rgba(15,15,19,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:8px 4px max(12px,env(safe-area-inset-bottom));flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:6px 4px;color:var(--text3);transition:color .15s;font-family:"Outfit",sans-serif}
+.nav-item.active{color:var(--accent)}
+.nav-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-label{font-size:10px;font-weight:500;letter-spacing:.3px}
+.shd{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;margin-top:20px}
+.shd:first-child{margin-top:0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:10px}
+.card-sm{padding:14px}
+.sg{display:grid;gap:10px;margin-bottom:10px}
+.sg2{grid-template-columns:1fr 1fr}
+.sg3{grid-template-columns:1fr 1fr 1fr}
+.sbox{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:14px}
+.slabel{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.sval{font-size:22px;font-weight:700;font-family:"JetBrains Mono",monospace;line-height:1}
+.ssub{font-size:11px;color:var(--text2);margin-top:4px}
+.sval.green{color:var(--green)}.sval.red{color:var(--red)}.sval.accent{color:var(--accent)}.sval.amber{color:var(--amber)}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:"Outfit",sans-serif;font-size:14px;font-weight:600;padding:12px 20px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:active{transform:scale(.97)}
+.btn-full{width:100%}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-green{background:var(--green);color:#064e3b}
+.btn-red{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.25)}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:8px}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fg:last-child{margin-bottom:0}
+.flabel{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3)}
+input,select{background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:"Outfit",sans-serif;font-size:16px;padding:12px 14px;outline:none;width:100%;transition:border-color .15s;appearance:none;-webkit-appearance:none}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,106,255,.12)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a5a78' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.log-hero{background:linear-gradient(135deg,#1a1830,#1e1e27);border:1px solid rgba(124,106,255,.25);border-radius:var(--r);padding:20px;margin-bottom:14px;position:relative;overflow:hidden}
+.log-hero::before{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:radial-gradient(circle,rgba(124,106,255,.15),transparent 70%);pointer-events:none}
+.log-title{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);margin-bottom:14px}
+.amt-wrap{position:relative;margin-bottom:14px}
+.amt-pfx{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:22px;font-weight:700;color:var(--text3);font-family:"JetBrains Mono",monospace;pointer-events:none}
+#expense-amount{font-size:28px;font-weight:700;font-family:"JetBrains Mono",monospace;padding-left:34px;background:var(--bg);border-color:var(--border2);height:60px}
+.log-sels{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.ptoggle{display:flex;gap:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:14px}
+.popt{flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--text2);font-family:"Outfit",sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center}
+.popt.active{background:var(--card);color:var(--text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.popt.mendel.active{color:var(--accent2)}
+.popt.rivka.active{color:var(--green)}
+.tx-list{display:flex;flex-direction:column}
+.tx-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.tx-item:last-child{border-bottom:none}
+.tx-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tx-icon.charge{background:rgba(248,113,113,.1)}
+.tx-icon.payment{background:rgba(52,211,153,.1)}
+.tx-body{flex:1;min-width:0}
+.tx-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tx-cat{background:var(--surface);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500;color:var(--text2)}
+.tx-amt{font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:600;flex-shrink:0}
+.tx-amt.charge{color:var(--red)}.tx-amt.payment{color:var(--green)}
+.pdot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+.pdot.mendel{background:var(--accent)}.pdot.rivka{background:var(--green)}
+.dc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:10px}
+.dc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.dc-name{font-size:16px;font-weight:700}
+.dc-type{font-size:11px;color:var(--text3);margin-top:2px}
+.dc-bal-wrap{text-align:right}
+.dc-bal{font-family:"JetBrains Mono",monospace;font-size:24px;font-weight:700;color:var(--red)}
+.dc-int{font-size:11px;color:var(--text3);margin-top:2px}
+.pbar{height:4px;background:var(--surface);border-radius:99px;overflow:hidden;margin-bottom:12px}
+.pbar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .8s}
+.dc-meta{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+.dc-mi{font-size:12px;color:var(--text2)}
+.dc-mi strong{color:var(--text);font-weight:600}
+.dc-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:4px 10px;border-radius:99px;border:1px solid}
+.dc-chip.ok{color:var(--text3);border-color:var(--border)}
+.dc-chip.soon{color:var(--amber);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.06)}
+.dc-chip.today{color:var(--red);border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06)}
+.dc-chip.paid{color:var(--green);border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.06)}
+.dc-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.mbars{display:flex;gap:6px;align-items:flex-end;height:80px;margin-bottom:6px}
+.mbg{flex:1;display:flex;gap:2px;align-items:flex-end}
+.mb{flex:1;border-radius:3px 3px 0 0;min-height:3px;transition:height .6s}
+.mb.spent{background:rgba(248,113,113,.55)}
+.mb.paid{background:rgba(52,211,153,.65)}
+.mbl{font-size:10px;color:var(--text3);text-align:center;font-family:"JetBrains Mono",monospace;flex:1}
+.irow{display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--surface);border-radius:var(--r2);margin-bottom:8px;border-left:3px solid}
+.irow.good{border-left-color:var(--green)}.irow.warn{border-left-color:var(--amber)}.irow.bad{border-left-color:var(--red)}.irow.info{border-left-color:var(--accent)}
+.iemoji{font-size:18px;flex-shrink:0;margin-top:1px}
+.ititle{font-size:13px;font-weight:600;margin-bottom:3px}
+.itext{font-size:12px;color:var(--text2);line-height:1.6}
+.pcrd{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:10px}
+.pstep{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--border)}
+.pstep:last-child{border-bottom:none}
+.pnum{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.pname{font-size:14px;font-weight:600;margin-bottom:3px}
+.pdetail{font-size:12px;color:var(--text2);line-height:1.65}
+.pbadge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid var(--accent);color:var(--accent2);margin-top:5px}
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:900;align-items:flex-end;justify-content:center}
+.mo.open{display:flex;animation:fi .2s}
+.md{background:var(--card);border:1px solid var(--border2);border-radius:20px 20px 0 0;padding:24px 20px max(24px,env(safe-area-inset-bottom));width:100%;max-width:520px;animation:su .25s cubic-bezier(.4,0,.2,1)}
+@media(min-width:520px){.mo{align-items:center;padding:20px}.md{border-radius:20px;max-width:440px}}
+.mh{width:32px;height:3px;background:var(--border2);border-radius:99px;margin:0 auto 20px}
+.md h3{font-size:18px;font-weight:700;margin-bottom:4px}
+.md p{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6}
+.ma{display:flex;gap:10px;margin-top:20px}
+.es{text-align:center;padding:40px 20px;color:var(--text3)}
+.es-icon{font-size:36px;margin-bottom:12px;opacity:.4}
+.es p{font-size:14px;line-height:1.6}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--card);border:1px solid var(--border2);color:var(--text);font-family:"Outfit",sans-serif;font-size:14px;font-weight:500;padding:12px 20px;border-radius:12px;z-index:999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.4);max-width:90vw;text-align:center}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:40px auto}
-
-.login-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
-.login-box{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:44px 32px;width:100%;max-width:380px;text-align:center;animation:scaleIn .4s ease both}
-.login-box h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;background:linear-gradient(135deg,#fff 30%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
-.login-box p{color:var(--muted);font-size:13px;margin-bottom:32px;line-height:1.6}
-.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;background:#fff;color:#1a1a26;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:14px 20px;cursor:pointer;transition:all .2s;margin-bottom:12px}
-.btn-google:hover{background:#f0f0f0;transform:translateY(-1px);box-shadow:0 4px 20px rgba(255,255,255,.15)}
-.login-note{font-size:11px;color:var(--muted);line-height:1.6}
-
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes scaleIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.spin{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin:32px auto}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes sp{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{display:none}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+<div class="screen active" id="screen-users">
+  <div class="user-select-wrap">
+    <div class="app-wordmark">Finance Tracker</div>
+    <div class="user-select-title">Who's tracking?</div>
+    <div class="user-select-sub">Select your profile</div>
+    <div class="user-cards">
+      <div class="user-card mendel" onclick="selectUser('mendel')">
+        <div class="uavatar">M</div>
+        <div class="user-card-name">Mendel</div>
+        <div class="user-card-sub">Tap to continue</div>
+      </div>
+      <div class="user-card rivka" onclick="selectUser('rivka')">
+        <div class="uavatar">R</div>
+        <div class="user-card-name">Rivka</div>
+        <div class="user-card-sub">Tap to continue</div>
+      </div>
+    </div>
+  </div>
+</div>
 
-<div class="login-screen" id="login-screen" style="display:none">
+<div class="screen" id="screen-login">
   <div class="login-box">
-    <div style="font-size:11px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:12px">// your path to zero</div>
-    <h1>Debt Freedom<br>Tracker</h1>
-    <p>Sign in to sync your data across all your devices.</p>
+    <h1>Sign in</h1>
+    <p>Connect your account to sync across devices</p>
     <button class="btn-google" onclick="signInWithGoogle()">
-      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.8l6.2 5.2C41 35.4 44 30.1 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.8l6.2 5.2C41 35.4 44 30.1 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
       Continue with Google
     </button>
-    <div class="login-note">Your data is private and only visible to you.</div>
   </div>
 </div>
 
-<div id="app" style="display:none">
-  <div class="top-bar">
-    <h1>// debt free</h1>
-    <div id="user-pill"></div>
-  </div>
-
-  <!-- HOME -->
-  <div class="tab-content active" id="tab-home">
-    <div class="hero">
-      <div class="hero-label">Total Debt Remaining</div>
-      <div class="hero-amount" id="hero-amount">$0</div>
-      <div class="hero-sub" id="hero-sub"></div>
-    </div>
-    <div class="hero-bar-wrap">
-      <div class="hero-bar-fill" id="hero-bar" style="width:0%"></div>
-    </div>
-    <div style="padding:0 20px;margin-top:20px">
-      <div class="section-title">Your Cards</div>
-      <div id="debt-list-home"></div>
-      <button class="btn btn-ghost btn-full" style="margin-top:6px" onclick="openAddDebt()">+ Add a Debt</button>
-    </div>
-  </div>
-
-  <!-- PLAN -->
-  <div class="tab-content" id="tab-plan">
-    <div class="card">
-      <div class="card-title">Strategy</div>
-      <div style="display:flex;gap:8px;margin:10px 0 16px">
-        <button class="btn btn-sm" id="strat-avalanche" onclick="setStrategy('avalanche')">❄️ Avalanche</button>
-        <button class="btn btn-sm btn-ghost" id="strat-snowball" onclick="setStrategy('snowball')">⛄ Snowball</button>
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label>Extra Monthly Payment ($)</label>
-        <input type="number" id="plan-extra" placeholder="e.g. 700" min="0" oninput="renderPlan()">
-      </div>
-    </div>
-    <div id="plan-output"></div>
-    <div id="plan-summary"></div>
-  </div>
-
-  <!-- MONEY -->
-  <div class="tab-content" id="tab-money">
-    <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
-      <button class="btn btn-sm" id="mtab-budget" onclick="switchMoneyTab('budget')">Budget</button>
-      <button class="btn btn-sm btn-ghost" id="mtab-spending" onclick="switchMoneyTab('spending')">Spending</button>
-      <button class="btn btn-sm btn-ghost" id="mtab-assets" onclick="switchMoneyTab('assets')">Net Worth</button>
-      <button class="btn btn-sm btn-ghost" id="mtab-insights" onclick="switchMoneyTab('insights')">Insights</button>
-    </div>
-    <div id="msub-budget">
-      <div class="card">
-        <div class="card-title">Monthly Income</div>
-        <div class="form-row" style="margin-top:10px">
-          <div class="form-group" style="margin-bottom:0"><label>Take-Home Pay</label><input type="number" id="income-main" placeholder="3500" oninput="saveBudgetIncome()"></div>
-          <div class="form-group" style="margin-bottom:0"><label>Side Income</label><input type="number" id="income-side" placeholder="0" oninput="saveBudgetIncome()"></div>
+<div class="screen" id="screen-app">
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left">
+        <div class="uav-sm" id="hdr-av" onclick="switchUser()"></div>
+        <div>
+          <div class="hdr-name" id="hdr-name"></div>
+          <div class="hdr-date" id="hdr-date"></div>
         </div>
       </div>
-      <div id="budget-summary-cards"></div>
-      <div class="card">
-        <div class="section-title">🔒 Fixed Expenses</div>
-        <div id="fixed-list"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <input type="text" id="fixed-new-name" placeholder="e.g. Rent" style="flex:1;width:auto">
-          <input type="number" id="fixed-new-amt" placeholder="$" style="width:80px">
-          <button class="btn btn-sm" onclick="addExpense('fixed')">+</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="section-title">📊 Variable Expenses</div>
-        <div id="var-list"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <input type="text" id="var-new-name" placeholder="e.g. Groceries" style="flex:1;width:auto">
-          <input type="number" id="var-new-amt" placeholder="$" style="width:80px">
-          <button class="btn btn-sm" onclick="addExpense('variable')">+</button>
-        </div>
-      </div>
-      <div id="budget-advice"></div>
+      <button class="btn btn-sm btn-ghost" onclick="if(confirm('Sign out?'))signOut()">Sign out</button>
     </div>
-    <div id="msub-assets" style="display:none">
-      <div id="nw-summary"></div>
-      <div class="card">
-        <div class="section-title">Add Asset</div>
-        <div class="form-group"><label>Name</label><input type="text" id="asset-name" placeholder="e.g. Savings Account"></div>
-        <div class="form-row">
-          <div class="form-group" style="margin-bottom:0"><label>Category</label>
-            <select id="asset-category"><option>Cash / Savings</option><option>Investments</option><option>Retirement (401k / IRA)</option><option>Real Estate</option><option>Vehicle</option><option>Crypto</option><option>Other</option></select>
+    <div class="tab-area">
+
+      <div class="tab-pane active" id="pane-log">
+        <div class="log-hero">
+          <div class="log-title">Log Expense</div>
+          <div class="ptoggle">
+            <button class="popt mendel active" id="lp-mendel" onclick="setLP('mendel')">Mendel</button>
+            <button class="popt rivka" id="lp-rivka" onclick="setLP('rivka')">Rivka</button>
           </div>
-          <div class="form-group" style="margin-bottom:0"><label>Value ($)</label><input type="number" id="asset-value" placeholder="0" min="0"></div>
+          <div class="amt-wrap">
+            <span class="amt-pfx">$</span>
+            <input type="number" id="expense-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+          </div>
+          <div class="log-sels">
+            <select id="expense-cat">
+              <option value="groceries">Groceries</option>
+              <option value="dining">Dining Out</option>
+              <option value="transport">Transport</option>
+              <option value="shopping">Shopping</option>
+              <option value="health">Health</option>
+              <option value="kids">Kids</option>
+              <option value="utilities">Utilities</option>
+              <option value="subscriptions">Subscriptions</option>
+              <option value="entertainment">Entertainment</option>
+              <option value="other">Other</option>
+            </select>
+            <select id="expense-card"><option value="">No card</option></select>
+          </div>
+          <input type="text" id="expense-note" placeholder="Note (optional)" style="margin-bottom:14px">
+          <button class="btn btn-full" onclick="logExpense()">+ Log Expense</button>
         </div>
-        <button class="btn" style="margin-top:14px" onclick="addAsset()">+ Add Asset</button>
+        <div class="shd">Recent</div>
+        <div class="card card-sm" id="recent-tx"></div>
       </div>
-      <div class="section-title">Your Assets</div>
-      <div id="asset-list"></div>
-    </div>
-    <div id="msub-insights" style="display:none">
-      <div id="insights-output"></div>
-    </div>
-    <div id="msub-spending" style="display:none">
-      <div id="spending-output"></div>
-    </div>
-  </div>
 
-  <!-- SETTINGS -->
-  <div class="tab-content" id="tab-settings">
-    <div class="card">
-      <div class="section-title">📤 Export Data</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Download all your data as a backup file.</p>
-      <button class="btn" onclick="exportData()">⬇️ Download Backup</button>
-    </div>
-    <div class="card">
-      <div class="section-title">📥 Import Data</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Load a backup. <strong style="color:var(--red)">Overwrites current data.</strong></p>
-      <label class="btn btn-ghost" style="cursor:pointer;display:inline-block">📂 Choose File
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
-      </label>
-    </div>
-    <div class="card" style="border-color:rgba(255,107,107,.2)">
-      <div class="section-title" style="color:var(--red)">⚠️ Danger Zone</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Permanently delete all data.</p>
-      <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
-    </div>
-  </div>
-</div>
+      <div class="tab-pane" id="pane-debts">
+        <div class="sg sg2" id="debt-strip"></div>
+        <div class="shd">Cards</div>
+        <div id="debt-list"></div>
+        <button class="btn btn-ghost btn-full" style="margin-top:6px" onclick="openModal('modal-add-debt')">+ Add Debt</button>
+      </div>
 
-<nav class="bottom-nav" id="bottom-nav" style="display:none">
-  <button class="nav-btn active" data-tab="home" onclick="setNav(this)">
-    <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>Home
-  </button>
-  <button class="nav-btn" data-tab="plan" onclick="setNav(this)">
-    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Plan
-  </button>
-  <button class="nav-btn" data-tab="money" onclick="setNav(this)">
-    <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Money
-  </button>
-  <button class="nav-btn" data-tab="settings" onclick="setNav(this)">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings
-  </button>
-</nav>
+      <div class="tab-pane" id="pane-analytics">
+        <div class="ptoggle" style="margin-bottom:16px">
+          <button class="popt mendel active" id="ap-mendel" onclick="setAP('mendel')">Mendel</button>
+          <button class="popt rivka" id="ap-rivka" onclick="setAP('rivka')">Rivka</button>
+          <button class="popt" id="ap-both" onclick="setAP('both')" style="flex:1.2">Both</button>
+        </div>
+        <div id="analytics-out"></div>
+      </div>
 
-<!-- MODAL: Update Balance -->
-<div class="modal-overlay" id="modal-balance">
-  <div class="modal">
-    <div class="drag-handle"></div>
-    <h3 id="modal-balance-title">Update Balance</h3>
-    <p id="modal-balance-sub"></p>
-    <div class="form-group">
-      <label>Current Balance from Bank App ($)</label>
-      <input type="number" id="balance-input" placeholder="0.00" min="0" step="0.01">
+      <div class="tab-pane" id="pane-plan">
+        <div id="plan-out"></div>
+      </div>
+
     </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="confirmBalanceUpdate()">Save Balance</button>
-      <button class="btn btn-ghost" onclick="closeModal('modal-balance')">Cancel</button>
-    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="log" onclick="switchTab(this)">
+        <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+        <span class="nav-label">Log</span>
+      </button>
+      <button class="nav-item" data-tab="debts" onclick="switchTab(this)">
+        <div class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+        <span class="nav-label">Debts</span>
+      </button>
+      <button class="nav-item" data-tab="analytics" onclick="switchTab(this)">
+        <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
+        <span class="nav-label">Analytics</span>
+      </button>
+      <button class="nav-item" data-tab="plan" onclick="switchTab(this)">
+        <div class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <span class="nav-label">Plan</span>
+      </button>
+    </nav>
   </div>
 </div>
 
-<!-- MODAL: Log Payment -->
-<div class="modal-overlay" id="modal-payment">
-  <div class="modal">
-    <div class="drag-handle"></div>
-    <h3 id="modal-payment-title">Log Payment</h3>
-    <p id="modal-payment-sub"></p>
-    <div class="form-group">
-      <label>Payment Amount ($)</label>
-      <input type="number" id="payment-input" placeholder="0.00" min="0" step="0.01">
-    </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="confirmPayment()">Confirm Payment</button>
-      <button class="btn btn-ghost" onclick="closeModal('modal-payment')">Cancel</button>
-    </div>
+<div class="mo" id="modal-balance">
+  <div class="md"><div class="mh"></div>
+    <h3 id="mb-title">Update Balance</h3><p id="mb-sub"></p>
+    <div class="fg"><div class="flabel">Balance from Bank App ($)</div>
+      <div style="position:relative">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:18px">$</span>
+        <input type="number" id="bal-input" placeholder="0.00" min="0" step="0.01" style="padding-left:30px;font-size:22px;font-family:'JetBrains Mono',monospace;font-weight:600">
+      </div></div>
+    <div class="ma"><button class="btn btn-full" onclick="confirmBalUpdate()">Save Balance</button><button class="btn btn-ghost" onclick="closeModal('modal-balance')">Cancel</button></div>
   </div>
 </div>
 
-<!-- MODAL: Add Debt -->
-<div class="modal-overlay" id="modal-add-debt">
-  <div class="modal">
-    <div class="drag-handle"></div>
-    <h3>Add a Debt</h3>
-    <p>Fill in the details from your card or loan statement.</p>
-    <div class="form-group"><label>Name</label><input type="text" id="new-debt-name" placeholder="e.g. Chase Card"></div>
-    <div class="form-group"><label>Type</label>
-      <select id="new-debt-type"><option>Credit Card</option><option>Student Loan</option><option>Car Loan</option><option>Personal Loan</option><option>Medical Bill</option><option>Mortgage</option><option>Other</option></select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Balance ($)</label><input type="number" id="new-debt-balance" placeholder="5000" min="0"></div>
-      <div class="form-group"><label>APR (%)</label><input type="number" id="new-debt-rate" placeholder="18.9" step="0.1" min="0"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Min Payment ($)</label><input type="number" id="new-debt-min" placeholder="50" min="0"></div>
-      <div class="form-group"><label>Due Day (1–28)</label><input type="number" id="new-debt-due" placeholder="15" min="1" max="28"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="addDebt()">Add Debt</button>
-      <button class="btn btn-ghost" onclick="closeModal('modal-add-debt')">Cancel</button>
-    </div>
+<div class="mo" id="modal-payment">
+  <div class="md"><div class="mh"></div>
+    <h3 id="mp-title">Log Payment</h3><p id="mp-sub"></p>
+    <div class="fg"><div class="flabel">Payment Amount ($)</div>
+      <div style="position:relative">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:18px">$</span>
+        <input type="number" id="pay-input" placeholder="0.00" min="0" step="0.01" style="padding-left:30px;font-size:22px;font-family:'JetBrains Mono',monospace;font-weight:600">
+      </div></div>
+    <div class="ma"><button class="btn btn-full btn-green" onclick="confirmPayment()">Confirm Payment</button><button class="btn btn-ghost" onclick="closeModal('modal-payment')">Cancel</button></div>
   </div>
 </div>
 
-<!-- MODAL: Edit Debt -->
-<div class="modal-overlay" id="modal-edit-debt">
-  <div class="modal">
-    <div class="drag-handle"></div>
-    <h3>Edit Debt</h3>
-    <p>Update any details. Payment history stays intact.</p>
-    <div class="form-group"><label>Name</label><input type="text" id="edit-debt-name"></div>
-    <div class="form-group"><label>Type</label>
-      <select id="edit-debt-type"><option>Credit Card</option><option>Student Loan</option><option>Car Loan</option><option>Personal Loan</option><option>Medical Bill</option><option>Mortgage</option><option>Other</option></select>
+<div class="mo" id="modal-add-debt">
+  <div class="md"><div class="mh"></div>
+    <h3>Add a Debt</h3><p>Enter details from your card or statement.</p>
+    <div class="fg"><div class="flabel">Name</div><input type="text" id="nd-name" placeholder="e.g. Chase Card"></div>
+    <div class="fg"><div class="flabel">Type</div><select id="nd-type"><option>Credit Card</option><option>Student Loan</option><option>Car Loan</option><option>Personal Loan</option><option>Other</option></select></div>
+    <div class="fr">
+      <div class="fg"><div class="flabel">Balance ($)</div><input type="number" id="nd-bal" placeholder="5000" min="0"></div>
+      <div class="fg"><div class="flabel">APR (%)</div><input type="number" id="nd-rate" placeholder="18.9" step="0.1" min="0"></div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label>Balance ($)</label><input type="number" id="edit-debt-balance" min="0"></div>
-      <div class="form-group"><label>APR (%)</label><input type="number" id="edit-debt-rate" step="0.1" min="0"></div>
+    <div class="fr">
+      <div class="fg"><div class="flabel">Min Payment ($)</div><input type="number" id="nd-min" placeholder="50" min="0"></div>
+      <div class="fg"><div class="flabel">Due Day (1-28)</div><input type="number" id="nd-due" placeholder="15" min="1" max="28"></div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label>Min Payment ($)</label><input type="number" id="edit-debt-min" min="0"></div>
-      <div class="form-group"><label>Due Day</label><input type="number" id="edit-debt-due" min="1" max="28"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="saveEditDebt()">Save Changes</button>
-      <button class="btn btn-ghost" onclick="closeModal('modal-edit-debt')">Cancel</button>
-    </div>
+    <div class="ma"><button class="btn btn-full" onclick="addDebt()">Add Debt</button><button class="btn btn-ghost" onclick="closeModal('modal-add-debt')">Cancel</button></div>
   </div>
 </div>
 
-<!-- MODAL: Bulk Check-in -->
-<div class="modal-overlay" id="modal-checkin">
-  <div class="modal">
-    <div class="drag-handle"></div>
-    <h3>Weekly Balance Update</h3>
-    <p>Check your bank apps and enter each card's current balance. Leave blank to skip.</p>
-    <div id="checkin-list"></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="saveCheckin()">Save All</button>
-      <button class="btn btn-ghost" onclick="closeModal('modal-checkin')">Cancel</button>
+<div class="mo" id="modal-edit-debt">
+  <div class="md"><div class="mh"></div>
+    <h3>Edit Debt</h3><p>Update details. History stays intact.</p>
+    <div class="fg"><div class="flabel">Name</div><input type="text" id="ed-name"></div>
+    <div class="fr">
+      <div class="fg"><div class="flabel">Balance ($)</div><input type="number" id="ed-bal" min="0"></div>
+      <div class="fg"><div class="flabel">APR (%)</div><input type="number" id="ed-rate" step="0.1" min="0"></div>
     </div>
+    <div class="fr">
+      <div class="fg"><div class="flabel">Min Payment ($)</div><input type="number" id="ed-min" min="0"></div>
+      <div class="fg"><div class="flabel">Due Day</div><input type="number" id="ed-due" min="1" max="28"></div>
+    </div>
+    <div class="ma"><button class="btn btn-full" onclick="saveEditDebt()">Save</button><button class="btn btn-ghost" onclick="closeModal('modal-edit-debt')">Cancel</button></div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
-
 <script>
-// ═══════════════════════════════════════════
-// SUPABASE
-// ═══════════════════════════════════════════
-const SUPABASE_URL = 'https://zsaokuspdzooaihqpuod.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzYW9rdXNwZHpvb2FpaHFwdW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjM1MzgsImV4cCI6MjA4NzA5OTUzOH0.TzKaUYb-32QZ-vqTmHeK5ZTin-z_dfmUJYxRsVIsElc';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let currentUser = null;
+const SB_URL='https://zsaokuspdzooaihqpuod.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzYW9rdXNwZHpvb2FpaHFwdW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjM1MzgsImV4cCI6MjA4NzA5OTUzOH0.TzKaUYb-32QZ-vqTmHeK5ZTin-z_dfmUJYxRsVIsElc';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+let currentUser=null;
 
-async function signInWithGoogle() {
-  const { error } = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:window.location.origin }});
-  if (error) toast('Sign in failed: ' + error.message, true);
-}
-async function signOut() {
-  await sb.auth.signOut();
-  currentUser = null;
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('bottom-nav').style.display = 'none';
-}
-function renderUserPill(user) {
-  const init = (user.email||'U')[0].toUpperCase();
-  document.getElementById('user-pill').innerHTML = `<div class="user-pill" onclick="if(confirm('Sign out?'))signOut()"><div class="user-avatar">${init}</div><div class="user-email">${user.email||''}</div></div>`;
-}
+async function signInWithGoogle(){await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});}
+async function signOut(){await sb.auth.signOut();currentUser=null;appInit=false;showScreen('screen-users');}
 
-// ── DB ──────────────────────────────────────
-async function dbLoadDebts() {
-  const { data, error } = await sb.from('debts').select('*').order('created_at');
-  if (error) { console.error(error); return []; }
-  return data.map(r => ({ id:r.id, name:r.name, type:r.type, originalBalance:r.original_balance, balance:r.balance, rate:r.rate, min:r.min, due:r.due, paid:r.paid }));
+// ── DB ──
+async function dbLoadDebts(){
+  const{data,error}=await sb.from('debts').select('*').order('created_at');
+  if(error){console.error(error);return[];}
+  return data.map(r=>({id:r.id,name:r.name,type:r.type,originalBalance:r.original_balance,balance:parseFloat(r.balance)||0,rate:parseFloat(r.rate)||0,min:parseFloat(r.min)||0,due:r.due,paid:parseFloat(r.paid)||0}));
 }
-async function dbAddDebt(debt) {
-  const { data, error } = await sb.from('debts').insert({ user_id:currentUser.id, name:debt.name, type:debt.type, original_balance:debt.originalBalance, balance:debt.balance, rate:debt.rate, min:debt.min, due:debt.due, paid:0 }).select().single();
-  if (error) { toast('Error saving debt.', true); console.error(error); return null; }
-  return { ...debt, id:data.id };
+async function dbAddDebt(d){
+  const{data,error}=await sb.from('debts').insert({user_id:currentUser.id,name:d.name,type:d.type,original_balance:d.originalBalance,balance:d.balance,rate:d.rate,min:d.min,due:d.due,paid:0}).select().single();
+  if(error){toast('Error saving',true);return null;}
+  return{...d,id:data.id};
 }
-async function dbUpdateDebt(debt) {
-  const { error } = await sb.from('debts').update({ name:debt.name, type:debt.type, balance:debt.balance, rate:debt.rate, min:debt.min, due:debt.due, paid:debt.paid }).eq('id', debt.id);
-  if (error) { toast('Error updating.', true); console.error(error); }
+async function dbUpdateDebt(d){await sb.from('debts').update({name:d.name,type:d.type,balance:d.balance,rate:d.rate,min:d.min,due:d.due,paid:d.paid}).eq('id',d.id);}
+async function dbDeleteDebt(id){await sb.from('debts').delete().eq('id',id);}
+async function dbLoadHistory(){
+  const{data,error}=await sb.from('payments').select('*').order('created_at',{ascending:false}).limit(300);
+  if(error){console.error(error);return[];}
+  return data.map(r=>({id:r.id,debtName:r.debt_name,amount:parseFloat(r.amount)||0,date:r.date,type:r.type||'payment',balanceBefore:parseFloat(r.balance_before)||0,balanceAfter:parseFloat(r.balance_after)||0,category:r.category||'other',person:r.person||'mendel',note:r.note||''}));
 }
-async function dbDeleteDebt(id) { await sb.from('debts').delete().eq('id', id); }
-async function dbLoadHistory() {
-  const { data, error } = await sb.from('payments').select('*').order('created_at', {ascending:false});
-  if (error) { console.error(error); return []; }
-  return data.map(r => ({
-    id:r.id, debtName:r.debt_name, amount:r.amount, date:r.date,
-    type:r.type||'payment', balanceBefore:r.balance_before||0, balanceAfter:r.balance_after||0
-  }));
+async function dbAddTx(tx){
+  const{data,error}=await sb.from('payments').insert({user_id:currentUser.id,debt_name:tx.debtName,amount:tx.amount,date:tx.date,type:tx.type,balance_before:tx.balanceBefore||0,balance_after:tx.balanceAfter||0,category:tx.category||'other',person:tx.person||'mendel',note:tx.note||''}).select().single();
+  if(error){console.error(error);return null;}
+  return{...tx,id:data.id};
 }
-// Record a payment (balance went DOWN — you paid)
-async function dbAddPayment(debtName, amount, date, balanceBefore, balanceAfter) {
-  await sb.from('payments').insert({
-    user_id:currentUser.id, debt_name:debtName, amount, date,
-    type:'payment', balance_before:balanceBefore, balance_after:balanceAfter
-  });
+async function dbSnap(at,lt){
+  const today=new Date().toISOString().split('T')[0];
+  await sb.from('networth_snapshots').upsert({user_id:currentUser.id,assets_total:at,liabilities_total:lt,net_worth:at-lt,snapshot_date:today},{onConflict:'user_id,snapshot_date'});
 }
-// Record a charge (balance went UP — you spent)
-async function dbAddCharge(debtName, amount, date, balanceBefore, balanceAfter) {
-  await sb.from('payments').insert({
-    user_id:currentUser.id, debt_name:debtName, amount, date,
-    type:'charge', balance_before:balanceBefore, balance_after:balanceAfter
-  });
-}
-async function dbLoadBudget() {
-  const { data, error } = await sb.from('budgets').select('data').eq('user_id', currentUser.id).single();
-  if (error || !data) return { income:{main:0,side:0}, fixed:[{name:'Rent/Mortgage',amt:0},{name:'Utilities',amt:0},{name:'Insurance',amt:0},{name:'Phone',amt:0}], variable:[{name:'Groceries',amt:0},{name:'Transport/Gas',amt:0},{name:'Dining Out',amt:0},{name:'Entertainment',amt:0}]};
-  return data.data;
-}
-async function dbSaveBudget(budgetData) {
-  const { data: existing } = await sb.from('budgets').select('user_id').eq('user_id', currentUser.id).single();
-  if (existing) await sb.from('budgets').update({ data:budgetData, updated_at:new Date().toISOString() }).eq('user_id', currentUser.id);
-  else await sb.from('budgets').insert({ user_id:currentUser.id, data:budgetData, updated_at:new Date().toISOString() });
-}
-async function dbLoadAssets() {
-  const { data, error } = await sb.from('assets').select('*').order('created_at');
-  if (error) { console.error(error); return []; }
-  return data.map(r => ({ id:r.id, name:r.name, category:r.category, value:r.value }));
-}
-async function dbAddAsset(asset) {
-  const { data, error } = await sb.from('assets').insert({ user_id:currentUser.id, name:asset.name, category:asset.category, value:asset.value }).select().single();
-  if (error) { toast('Error saving asset.', true); return null; }
-  return { ...asset, id:data.id };
-}
-async function dbUpdateAsset(asset) { await sb.from('assets').update({ name:asset.name, category:asset.category, value:asset.value }).eq('id', asset.id); }
-async function dbDeleteAsset(id) { await sb.from('assets').delete().eq('id', id); }
-async function dbLoadSnapshots() {
-  const { data, error } = await sb.from('networth_snapshots').select('*').order('snapshot_date');
-  if (error) { console.error(error); return []; }
-  return data;
-}
-async function dbSaveSnapshot(assetsTotal, liabilitiesTotal) {
-  const today = new Date().toISOString().split('T')[0];
-  await sb.from('networth_snapshots').upsert({ user_id:currentUser.id, assets_total:assetsTotal, liabilities_total:liabilitiesTotal, net_worth:assetsTotal-liabilitiesTotal, snapshot_date:today }, { onConflict:'user_id,snapshot_date' });
-}
+async function dbLoadBudget(){const{data}=await sb.from('budgets').select('data').eq('user_id',currentUser.id).single();return data?.data||{};}
+async function dbLoadAssets(){const{data,error}=await sb.from('assets').select('*').order('created_at');if(error)return[];return data.map(r=>({id:r.id,name:r.name,category:r.category,value:parseFloat(r.value)||0}));}
 
-// ── STATE ────────────────────────────────────
-let debts=[], history=[], budget={}, assets=[], snapshots=[];
+// ── STATE ──
+let debts=[],history=[],assets=[];
+let currentPerson=localStorage.getItem('fp_person')||'mendel';
+let logPerson=currentPerson,analyticsPerson=currentPerson;
+let updatingBalId=null,payingId=null,editingId=null;
 let planStrategy='avalanche';
-let updatingBalanceId=null, payingId=null, editingId=null;
 
-async function autoSnapshot() {
-  await dbSaveSnapshot(totalAssets(), totalLiabilities());
-  snapshots = await dbLoadSnapshots();
+// ── SCREENS / NAV ──
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function switchTab(btn){
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  const tab=btn.dataset.tab;
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pane-'+tab).classList.add('active');
+  if(tab==='debts')renderDebts();
+  if(tab==='analytics')renderAnalytics();
+  if(tab==='plan')renderPlan();
+  if(tab==='log')renderRecentTx();
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.target.classList.remove('open');});
+
+// ── USER ──
+function selectUser(person){
+  currentPerson=person;logPerson=person;analyticsPerson=person;
+  localStorage.setItem('fp_person',person);
+  sb.auth.getSession().then(({data:{session}})=>{
+    if(session?.user)initApp(session.user);else showScreen('screen-login');
+  });
+}
+function switchUser(){showScreen('screen-users');}
+function renderHeader(){
+  const av=document.getElementById('hdr-av');
+  av.className='uav-sm '+currentPerson;
+  av.textContent=currentPerson==='mendel'?'M':'R';
+  document.getElementById('hdr-name').textContent=currentPerson.charAt(0).toUpperCase()+currentPerson.slice(1);
+  document.getElementById('hdr-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 }
 
-// ═══════════════════════════════════════════
-// NAV
-// ═══════════════════════════════════════════
-function switchTab(name) {
-  document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
-  if (name==='home')  renderHome();
-  if (name==='plan')  renderPlan();
-  if (name==='money') renderMoney();
+// ── CATEGORIES ──
+const CE={groceries:'🛒',dining:'🍽️',transport:'🚗',shopping:'🛍️',health:'💊',kids:'👶',utilities:'💡',subscriptions:'📱',entertainment:'🎬',other:'📦',payment:'💳'};
+const CL={groceries:'Groceries',dining:'Dining',transport:'Transport',shopping:'Shopping',health:'Health',kids:'Kids',utilities:'Utilities',subscriptions:'Subscriptions',entertainment:'Entertainment',other:'Other',payment:'Payment'};
+
+// ── LOG TAB ──
+function setLP(p){logPerson=p;['mendel','rivka'].forEach(x=>document.getElementById('lp-'+x).classList.toggle('active',x===p));}
+function populateCards(){
+  const sel=document.getElementById('expense-card');
+  sel.innerHTML='<option value="">No card</option>';
+  debts.forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent=d.name;sel.appendChild(o);});
 }
-function setNav(btn) {
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const tab = btn.dataset.tab;
-  if (tab) switchTab(tab);
-}
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
-
-// ═══════════════════════════════════════════
-// HOME
-// ═══════════════════════════════════════════
-function renderHome() {
-  const total     = debts.reduce((s,d) => s+d.balance, 0);
-  const origTotal = debts.reduce((s,d) => s+d.originalBalance, 0);
-  const totalPaid = debts.reduce((s,d) => s+d.paid, 0);
-  const pct       = origTotal>0 ? Math.round((totalPaid/origTotal)*100) : 0;
-  const interest  = debts.reduce((s,d) => s+(d.balance*d.rate/100/12), 0);
-
-  document.getElementById('hero-amount').textContent = '$' + Math.round(total).toLocaleString();
-  document.getElementById('hero-sub').textContent = interest>0
-    ? `$${interest.toFixed(0)}/mo in interest · ${pct}% paid off`
-    : debts.length ? `${pct}% paid off · keep going!` : 'Add your debts to get started';
-  document.getElementById('hero-bar').style.width = pct + '%';
-
-  const el = document.getElementById('debt-list-home');
-  if (!debts.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">💳</div>No debts yet. Add your first one below.</div>`;
-    return;
+async function logExpense(){
+  const amount=parseFloat(document.getElementById('expense-amount').value);
+  const cat=document.getElementById('expense-cat').value;
+  const cardId=document.getElementById('expense-card').value;
+  const note=document.getElementById('expense-note').value.trim();
+  if(!amount||amount<=0){toast('Enter an amount',true);return;}
+  const dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+  if(cardId){
+    const d=debts.find(x=>x.id===cardId);
+    if(d){
+      const oldBal=d.balance;
+      d.balance=parseFloat((d.balance+amount).toFixed(2));
+      await dbUpdateDebt(d);
+      const todayMid=new Date();todayMid.setHours(0,0,0,0);
+      await recordSpread(d.name,amount,todayMid,oldBal,d.balance,cat,logPerson,note);
+      await dbSnap(totalAssets(),totalLiabilities());
+    }
+  } else {
+    const tx=await dbAddTx({debtName:'General',amount,date:dateStr,type:'charge',balanceBefore:0,balanceAfter:0,category:cat,person:logPerson,note});
+    if(tx)history.unshift(tx);
   }
+  document.getElementById('expense-amount').value='';
+  document.getElementById('expense-note').value='';
+  renderRecentTx();renderDebts();
+  toast('$'+amount.toFixed(2)+' logged');
+}
+function renderRecentTx(){
+  const el=document.getElementById('recent-tx');
+  if(!history.length){el.innerHTML='<div class="es"><div class="es-icon">📋</div><p>No transactions yet.<br>Log your first expense above.</p></div>';return;}
+  el.innerHTML='<div class="tx-list">'+history.slice(0,40).map(tx=>{
+    const isC=tx.type==='charge';
+    const emoji=isC?(CE[tx.category]||'📦'):'💳';
+    const label=isC?(CL[tx.category]||'Other'):'Payment';
+    return '<div class="tx-item"><div class="tx-icon '+tx.type+'">'+emoji+'</div><div class="tx-body"><div class="tx-name">'+tx.debtName+(tx.note?' — '+tx.note:'')+'</div><div class="tx-meta"><span class="pdot '+(tx.person||'mendel')+'"></span><span class="tx-cat">'+label+'</span><span>'+tx.date+'</span></div></div><div class="tx-amt '+tx.type+'">'+(isC?'-':'+')+' $'+tx.amount.toFixed(2)+'</div></div>';
+  }).join('')+'</div>';
+}
 
-  const now = new Date();
-  const todayDate = now.getDate();
-  const todayMs = now.getTime();
+// ── DEBTS ──
+function totalAssets(){return assets.reduce((s,a)=>s+(a.value||0),0);}
+function totalLiabilities(){return debts.reduce((s,d)=>s+(d.balance||0),0);}
+function parseLD(str){if(!str)return null;const d=new Date(str);return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
 
-  el.innerHTML = debts.map(d => {
-    // ── SMART DUE DATE LOGIC ──────────────────────────────
-    // Parse a date string like "Mar 5, 2026" safely without timezone issues
-    function parseDate(str) {
-      const d = new Date(str);
-      // Normalize to midnight local time to avoid off-by-one from timezone
-      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    }
-
-    // Today at midnight for clean day comparisons
-    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    // Find most recent PAYMENT (not charge) for this debt within last 40 days
-    const recentPayment = history.find(h =>
-      h.debtName === d.name &&
-      h.type !== 'charge' &&
-      (todayMidnight - parseDate(h.date)) < 40 * 24 * 60 * 60 * 1000
-    );
-
-    // ── BILLING CYCLE LOGIC ─────────────────────────────────
-    // Step 1: figure out the most recent past due date (last time payment was expected)
-    // Step 2: check if a payment was made after that date (= this cycle is paid)
-    // Step 3: if paid, next due date is one full month after the past due date
-    //         if not paid, next due date is the upcoming one
-
-    // Most recent past due date (could be this month if due day already passed)
-    let lastDueDate = new Date(now.getFullYear(), now.getMonth(), d.due);
-    if (lastDueDate > todayMidnight) {
-      // Due day hasn't come yet this month — last due date was previous month
-      lastDueDate = new Date(now.getFullYear(), now.getMonth() - 1, d.due);
-    }
-
-    // Has a payment been made since the last due date?
-    const paidThisCycle = history.find(h =>
-      h.debtName === d.name &&
-      h.type !== 'charge' &&
-      parseDate(h.date) >= lastDueDate
-    );
-
-    // Next due date depends on whether this cycle is already paid:
-    // - Paid: next due is one month after the last due date (already covered this cycle)
-    // - Not paid: next due is the upcoming due date
-    let nextDueDate;
-    if (paidThisCycle) {
-      // This cycle is covered — next payment is due one month after last due date
-      nextDueDate = new Date(lastDueDate.getFullYear(), lastDueDate.getMonth() + 1, d.due);
-    } else {
-      // Not yet paid — due date is the upcoming one
-      nextDueDate = new Date(now.getFullYear(), now.getMonth(), d.due);
-      if (nextDueDate < todayMidnight) nextDueDate = new Date(now.getFullYear(), now.getMonth() + 1, d.due);
-    }
-
-    const daysUntil = Math.round((nextDueDate - todayMidnight) / (1000*60*60*24));
-    const dueDateStr = nextDueDate.toLocaleDateString('en-US', {month:'short', day:'numeric'});
-
-    let dueBadge;
-    if (d.balance <= 0) {
-      dueBadge = `<span class="due-badge ok">✅ Paid off!</span>`;
-    } else if (paidThisCycle) {
-      const paidDate = parseDate(paidThisCycle.date);
-      const paidAgo = Math.round((todayMidnight - paidDate) / (1000*60*60*24));
-      const paidWhen = paidAgo === 0 ? 'today' : paidAgo === 1 ? 'yesterday' : `${paidAgo}d ago`;
-      dueBadge = `<span class="due-badge ok">✓ Paid ${paidWhen} — next due ${dueDateStr}</span>`;
-    } else if (daysUntil === 0) {
-      dueBadge = `<span class="due-badge today">● Due Today — $${d.min} min</span>`;
-    } else if (daysUntil <= 5) {
-      dueBadge = `<span class="due-badge soon">⏰ Due ${dueDateStr} — $${d.min} min</span>`;
-    } else {
-      dueBadge = `<span class="due-badge ok">📅 Due ${dueDateStr} — $${d.min}/mo min</span>`;
-    }
-
-    const dpct = Math.min(100, Math.round((d.paid/(d.originalBalance||1))*100));
-    const intPerMo = (d.balance*d.rate/100/12).toFixed(0);
-    return `<div class="debt-card">
-      <div class="debt-card-top">
-        <div>
-          <div class="debt-card-name">${d.name}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${d.type}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--red)">$${Math.round(d.balance).toLocaleString()}</div>
-          <div style="font-size:11px;color:var(--muted)">${d.rate>0?`$${intPerMo}/mo interest · ${d.rate}%`:'0% APR ✓'}</div>
-        </div>
-      </div>
-      ${dueBadge}
-      <div class="debt-progress">
-        <div class="debt-progress-info"><span>${dpct}% paid off</span><span>$${Math.round(d.paid).toLocaleString()} paid total</span></div>
-        <div class="debt-progress-bar"><div class="debt-progress-fill" style="width:${dpct}%"></div></div>
-      </div>
-      <div class="debt-actions">
-        <button class="btn btn-sm" onclick="openUpdateBalance('${d.id}')">📊 Update Balance</button>
-        <button class="btn btn-sm btn-ghost" onclick="openPayment('${d.id}')">💳 Log Payment</button>
-        <button class="btn btn-sm btn-ghost" onclick="openEditDebt('${d.id}')">✏️</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteDebt('${d.id}')">×</button>
-      </div>
-    </div>`;
+function renderDebts(){
+  const total=totalLiabilities();
+  const interest=debts.reduce((s,d)=>s+(d.balance*d.rate/100/12),0);
+  const mins=debts.reduce((s,d)=>s+d.min,0);
+  document.getElementById('debt-strip').innerHTML=
+    '<div class="sbox"><div class="slabel">Total Owed</div><div class="sval red">$'+Math.round(total).toLocaleString()+'</div><div class="ssub">'+debts.length+' accounts</div></div>'+
+    '<div class="sbox"><div class="slabel">Monthly Interest</div><div class="sval amber">$'+interest.toFixed(0)+'</div><div class="ssub">$'+mins.toFixed(0)+'/mo minimums</div></div>';
+  const el=document.getElementById('debt-list');
+  if(!debts.length){el.innerHTML='<div class="es"><div class="es-icon">💳</div><p>No debts added yet.</p></div>';return;}
+  const now=new Date();
+  const todayMid=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  el.innerHTML=debts.map(d=>{
+    const pct=Math.min(100,Math.round((d.paid/(d.originalBalance||1))*100));
+    const intMo=(d.balance*d.rate/100/12).toFixed(0);
+    let lastDue=new Date(now.getFullYear(),now.getMonth(),d.due);
+    if(lastDue>todayMid)lastDue=new Date(now.getFullYear(),now.getMonth()-1,d.due);
+    const paidCycle=history.find(h=>h.debtName===d.name&&h.type!=='charge'&&parseLD(h.date)>=lastDue);
+    let nextDue;
+    if(paidCycle){nextDue=new Date(lastDue.getFullYear(),lastDue.getMonth()+1,d.due);}
+    else{nextDue=new Date(now.getFullYear(),now.getMonth(),d.due);if(nextDue<todayMid)nextDue=new Date(now.getFullYear(),now.getMonth()+1,d.due);}
+    const daysUntil=Math.round((nextDue-todayMid)/(1000*60*60*24));
+    const dueDateStr=nextDue.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    let chip;
+    if(d.balance<=0.5)chip='<span class="dc-chip paid">Paid off</span>';
+    else if(paidCycle){const ago=Math.round((todayMid-parseLD(paidCycle.date))/(1000*60*60*24));chip='<span class="dc-chip paid">Paid '+(ago===0?'today':ago===1?'yesterday':ago+'d ago')+' · next '+dueDateStr+'</span>';}
+    else if(daysUntil===0)chip='<span class="dc-chip today">Due today · $'+d.min+' min</span>';
+    else if(daysUntil<=5)chip='<span class="dc-chip soon">Due '+dueDateStr+' · $'+d.min+'</span>';
+    else chip='<span class="dc-chip ok">Due '+dueDateStr+'</span>';
+    return '<div class="dc">'+
+      '<div class="dc-top"><div><div class="dc-name">'+d.name+'</div><div class="dc-type">'+d.type+'</div></div>'+
+      '<div class="dc-bal-wrap"><div class="dc-bal">$'+Math.round(d.balance).toLocaleString()+'</div><div class="dc-int">'+(d.rate>0?'$'+intMo+'/mo · '+d.rate+'%':'0% APR')+'</div></div></div>'+
+      '<div class="pbar"><div class="pbar-fill" style="width:'+pct+'%"></div></div>'+
+      '<div class="dc-meta"><div class="dc-mi"><strong>'+pct+'%</strong> paid</div><div class="dc-mi">$<strong>'+Math.round(d.paid).toLocaleString()+'</strong> total paid</div><div class="dc-mi">Min <strong>$'+d.min+'</strong>/mo</div></div>'+
+      chip+
+      '<div class="dc-acts"><button class="btn btn-sm" onclick="openBal(\''+d.id+'\')">Update Balance</button><button class="btn btn-sm btn-green" onclick="openPay(\''+d.id+'\')">+ Payment</button><button class="btn btn-sm btn-ghost" onclick="openEdit(\''+d.id+'\')">Edit</button><button class="btn btn-sm btn-red" onclick="delDebt(\''+d.id+'\')">Remove</button></div></div>';
   }).join('');
 }
 
-// ── UPDATE BALANCE ──────────────────────────
-// This is the main weekly action:
-// Open bank app, see new balance, tap Update Balance, type it in.
-// If the balance went DOWN, we automatically record the difference
-// as a payment in your history so the paid-off tracking stays accurate.
-function openUpdateBalance(id) {
-  updatingBalanceId = id;
-  const d = debts.find(x => x.id===id);
-  document.getElementById('modal-balance-title').textContent = `Update: ${d.name}`;
-  document.getElementById('modal-balance-sub').textContent = `Current balance: $${Math.round(d.balance).toLocaleString()}. Enter what your bank app shows right now.`;
-  document.getElementById('balance-input').value = '';
-  openModal('modal-balance');
-  setTimeout(() => document.getElementById('balance-input').focus(), 150);
+function openBal(id){
+  updatingBalId=id;const d=debts.find(x=>x.id===id);
+  document.getElementById('mb-title').textContent='Update: '+d.name;
+  document.getElementById('mb-sub').textContent='Current: $'+d.balance.toFixed(2)+'. Enter what your bank shows now.';
+  document.getElementById('bal-input').value='';
+  openModal('modal-balance');setTimeout(()=>document.getElementById('bal-input').focus(),150);
 }
-async function confirmBalanceUpdate() {
-  const val = parseFloat(document.getElementById('balance-input').value);
-  if (isNaN(val) || val < 0) { toast('Enter a valid balance.', true); return; }
-  const d = debts.find(x => x.id===updatingBalanceId);
-  const oldBal = d.balance;
-  const diff = val - oldBal;
-  const dateStr = new Date().toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
-  d.balance = val;
-
-  if (diff < 0) {
-    // Balance went DOWN — payment/paydown
-    const paid = Math.abs(diff);
-    d.paid += paid;
-    await dbAddPayment(d.name, paid, dateStr, oldBal, val);
-    history.unshift({ id:Date.now(), debtName:d.name, amount:paid, date:dateStr, type:'payment', balanceBefore:oldBal, balanceAfter:val });
-  } else if (diff > 0) {
-    // Balance went UP — new spending on the card
-    const spent = diff;
-    await dbAddCharge(d.name, spent, dateStr, oldBal, val);
-    history.unshift({ id:Date.now(), debtName:d.name, amount:spent, date:dateStr, type:'charge', balanceBefore:oldBal, balanceAfter:val });
+async function confirmBalUpdate(){
+  const val=parseFloat(document.getElementById('bal-input').value);
+  if(isNaN(val)||val<0){toast('Enter a valid balance',true);return;}
+  const d=debts.find(x=>x.id===updatingBalId);
+  const oldBal=d.balance;const diff=val-oldBal;
+  const dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+  d.balance=val;
+  if(diff<0){
+    const paid=Math.abs(diff);d.paid+=paid;
+    const tx=await dbAddTx({debtName:d.name,amount:paid,date:dateStr,type:'payment',balanceBefore:oldBal,balanceAfter:val,category:'payment',person:currentPerson,note:''});
+    if(tx)history.unshift(tx);
+  } else if(diff>0){
+    const tm=new Date();tm.setHours(0,0,0,0);
+    await recordSpread(d.name,diff,tm,oldBal,val,'other',currentPerson,'');
   }
-
+  await dbUpdateDebt(d);await dbSnap(totalAssets(),totalLiabilities());
+  closeModal('modal-balance');renderDebts();renderRecentTx();
+  if(val===0)toast('🎉 '+d.name+' PAID OFF!');
+  else if(diff>0)toast('+$'+Math.round(diff).toLocaleString()+' spending recorded');
+  else toast('$'+Math.round(Math.abs(diff)).toLocaleString()+' payment recorded');
+}
+function openPay(id){
+  payingId=id;const d=debts.find(x=>x.id===id);
+  document.getElementById('mp-title').textContent='Pay: '+d.name;
+  document.getElementById('mp-sub').textContent='Balance: $'+d.balance.toFixed(2)+' · Min: $'+d.min+'/mo';
+  document.getElementById('pay-input').value=d.min;
+  openModal('modal-payment');setTimeout(()=>document.getElementById('pay-input').select(),150);
+}
+async function confirmPayment(){
+  const amount=parseFloat(document.getElementById('pay-input').value);
+  if(!amount||amount<=0){toast('Enter a valid amount',true);return;}
+  const d=debts.find(x=>x.id===payingId);
+  const oldBal=d.balance;const actual=Math.min(amount,d.balance);
+  d.balance=Math.max(0,d.balance-actual);d.paid+=actual;
+  const dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
   await dbUpdateDebt(d);
-  await autoSnapshot();
-  closeModal('modal-balance');
-  renderHome();
-  if (val===0) toast(`🎉 ${d.name} is PAID OFF!`);
-  else if (diff > 0) toast(`+$${Math.round(diff).toLocaleString()} in new spending recorded`);
-  else toast(`$${Math.round(Math.abs(diff)).toLocaleString()} payment recorded`);
+  const tx=await dbAddTx({debtName:d.name,amount:actual,date:dateStr,type:'payment',balanceBefore:oldBal,balanceAfter:d.balance,category:'payment',person:currentPerson,note:''});
+  if(tx)history.unshift(tx);
+  await dbSnap(totalAssets(),totalLiabilities());
+  closeModal('modal-payment');renderDebts();renderRecentTx();
+  toast(d.balance===0?'🎉 '+d.name+' PAID OFF!':'$'+actual.toFixed(2)+' payment logged');
 }
-
-// ── BULK CHECK-IN ───────────────────────────
-function openCheckin() {
-  document.getElementById('checkin-list').innerHTML = debts.map(d => `
-    <div style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
-        <span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700">${d.name}</span>
-        <span style="font-size:11px;color:var(--muted)">was $${Math.round(d.balance).toLocaleString()}</span>
-      </div>
-      <input type="number" placeholder="New balance (leave blank to skip)" min="0" step="0.01"
-        data-debt-id="${d.id}">
-    </div>`).join('');
-  openModal('modal-checkin');
-}
-async function saveCheckin() {
-  const inputs = document.querySelectorAll('#checkin-list input[data-debt-id]');
-  let changed = 0;
-  for (const input of inputs) {
-    const val = parseFloat(input.value);
-    if (isNaN(val)) continue;
-    const id = input.dataset.debtId;
-    const d = debts.find(x => x.id===id);
-    if (!d) continue;
-    const oldBal = d.balance;
-    const diff = val - oldBal;
-    const dateStr = new Date().toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
-    d.balance = val;
-    if (diff < 0) {
-      const paid = Math.abs(diff);
-      d.paid += paid;
-      await dbAddPayment(d.name, paid, dateStr, oldBal, val);
-      history.unshift({ id:Date.now(), debtName:d.name, amount:paid, date:dateStr, type:'payment', balanceBefore:oldBal, balanceAfter:val });
-    } else if (diff > 0) {
-      await dbAddCharge(d.name, diff, dateStr, oldBal, val);
-      history.unshift({ id:Date.now(), debtName:d.name, amount:diff, date:dateStr, type:'charge', balanceBefore:oldBal, balanceAfter:val });
-    }
-    await dbUpdateDebt(d);
-    changed++;
-  }
-  await autoSnapshot();
-  closeModal('modal-checkin');
-  renderHome();
-  toast(changed > 0 ? `${changed} balance${changed!==1?'s':''} updated!` : 'No changes made.');
-}
-
-// ── LOG PAYMENT ─────────────────────────────
-function openPayment(id) {
-  payingId = id;
-  const d = debts.find(x => x.id===id);
-  document.getElementById('modal-payment-title').textContent = `Pay: ${d.name}`;
-  document.getElementById('modal-payment-sub').textContent = `Balance: $${fmt(d.balance)} · Minimum: $${d.min}/mo`;
-  document.getElementById('payment-input').value = d.min;
-  openModal('modal-payment');
-  setTimeout(() => document.getElementById('payment-input').select(), 150);
-}
-async function confirmPayment() {
-  const amount = parseFloat(document.getElementById('payment-input').value);
-  if (!amount || amount<=0) { toast('Enter a valid amount.', true); return; }
-  const d = debts.find(x => x.id===payingId);
-  const actual = Math.min(amount, d.balance);
-  d.balance = Math.max(0, d.balance-actual);
-  d.paid += actual;
-  const dateStr = new Date().toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
-  await dbUpdateDebt(d);
-  const balBefore = d.balance + actual; // reconstruct pre-payment balance
-  await dbAddPayment(d.name, actual, dateStr, balBefore, d.balance);
-  history.unshift({ id:Date.now(), debtName:d.name, amount:actual, date:dateStr, type:'payment', balanceBefore:balBefore, balanceAfter:d.balance });
-  await autoSnapshot();
-  closeModal('modal-payment');
-  renderHome();
-  toast(d.balance===0 ? `🎉 ${d.name} PAID OFF!` : `$${actual.toFixed(2)} payment logged!`);
-}
-
-// ── ADD / EDIT / DELETE DEBT ────────────────
-function openAddDebt() { openModal('modal-add-debt'); }
-async function addDebt() {
-  const name    = document.getElementById('new-debt-name').value.trim();
-  const type    = document.getElementById('new-debt-type').value;
-  const balance = parseFloat(document.getElementById('new-debt-balance').value);
-  const rate    = parseFloat(document.getElementById('new-debt-rate').value);
-  const min     = parseFloat(document.getElementById('new-debt-min').value);
-  const due     = parseInt(document.getElementById('new-debt-due').value)||1;
-  if (!name||isNaN(balance)||isNaN(rate)||isNaN(min)) { toast('Fill in all fields.', true); return; }
-  const nd = await dbAddDebt({ name, type, originalBalance:balance, balance, rate, min, due, paid:0 });
-  if (!nd) return;
-  debts.push(nd);
-  ['new-debt-name','new-debt-balance','new-debt-rate','new-debt-min','new-debt-due'].forEach(id => document.getElementById(id).value='');
-  await autoSnapshot();
-  closeModal('modal-add-debt');
-  renderHome();
-  toast('Debt added!');
-}
-function openEditDebt(id) {
-  editingId = id;
-  const d = debts.find(x => x.id===id);
-  document.getElementById('edit-debt-name').value    = d.name;
-  document.getElementById('edit-debt-type').value    = d.type;
-  document.getElementById('edit-debt-balance').value = d.balance;
-  document.getElementById('edit-debt-rate').value    = d.rate;
-  document.getElementById('edit-debt-min').value     = d.min;
-  document.getElementById('edit-debt-due').value     = d.due;
+function openEdit(id){
+  editingId=id;const d=debts.find(x=>x.id===id);
+  document.getElementById('ed-name').value=d.name;document.getElementById('ed-bal').value=d.balance;
+  document.getElementById('ed-rate').value=d.rate;document.getElementById('ed-min').value=d.min;document.getElementById('ed-due').value=d.due;
   openModal('modal-edit-debt');
 }
-async function saveEditDebt() {
-  const name    = document.getElementById('edit-debt-name').value.trim();
-  const type    = document.getElementById('edit-debt-type').value;
-  const balance = parseFloat(document.getElementById('edit-debt-balance').value);
-  const rate    = parseFloat(document.getElementById('edit-debt-rate').value);
-  const min     = parseFloat(document.getElementById('edit-debt-min').value);
-  const due     = parseInt(document.getElementById('edit-debt-due').value)||1;
-  if (!name||isNaN(balance)||isNaN(rate)||isNaN(min)) { toast('Fill in all fields.', true); return; }
-  const d = debts.find(x => x.id===editingId);
-  Object.assign(d, {name,type,balance,rate,min,due});
-  await dbUpdateDebt(d);
-  closeModal('modal-edit-debt');
-  renderHome();
-  toast('Updated!');
+async function saveEditDebt(){
+  const name=document.getElementById('ed-name').value.trim();
+  const bal=parseFloat(document.getElementById('ed-bal').value);
+  const rate=parseFloat(document.getElementById('ed-rate').value);
+  const min=parseFloat(document.getElementById('ed-min').value);
+  const due=parseInt(document.getElementById('ed-due').value)||1;
+  if(!name||isNaN(bal)||isNaN(rate)||isNaN(min)){toast('Fill in all fields',true);return;}
+  const d=debts.find(x=>x.id===editingId);Object.assign(d,{name,balance:bal,rate,min,due});
+  await dbUpdateDebt(d);closeModal('modal-edit-debt');renderDebts();toast('Updated!');
 }
-async function deleteDebt(id) {
-  if (!confirm('Delete this debt? Cannot be undone.')) return;
-  await dbDeleteDebt(id);
-  debts = debts.filter(d => d.id!==id);
-  await autoSnapshot();
-  renderHome();
-  toast('Debt removed.');
+async function addDebt(){
+  const name=document.getElementById('nd-name').value.trim();
+  const type=document.getElementById('nd-type').value;
+  const bal=parseFloat(document.getElementById('nd-bal').value);
+  const rate=parseFloat(document.getElementById('nd-rate').value);
+  const min=parseFloat(document.getElementById('nd-min').value);
+  const due=parseInt(document.getElementById('nd-due').value)||1;
+  if(!name||isNaN(bal)||isNaN(rate)||isNaN(min)){toast('Fill in all fields',true);return;}
+  const nd=await dbAddDebt({name,type,originalBalance:bal,balance:bal,rate,min,due,paid:0});
+  if(!nd)return;
+  debts.push(nd);
+  ['nd-name','nd-bal','nd-rate','nd-min','nd-due'].forEach(id=>document.getElementById(id).value='');
+  populateCards();await dbSnap(totalAssets(),totalLiabilities());closeModal('modal-add-debt');renderDebts();toast('Debt added!');
 }
-
-// ═══════════════════════════════════════════
-// PLAN
-// ═══════════════════════════════════════════
-function setStrategy(s) {
-  planStrategy = s;
-  document.getElementById('strat-avalanche').className = s==='avalanche' ? 'btn btn-sm' : 'btn btn-sm btn-ghost';
-  document.getElementById('strat-snowball').className  = s==='snowball'  ? 'btn btn-sm' : 'btn btn-sm btn-ghost';
-  renderPlan();
+async function delDebt(id){
+  if(!confirm('Delete this debt?'))return;
+  await dbDeleteDebt(id);debts=debts.filter(d=>d.id!==id);
+  populateCards();await dbSnap(totalAssets(),totalLiabilities());renderDebts();toast('Removed.');
 }
 
-function simPayoff(extraPerMonth, strategy) {
-  if (!debts.length) return {months:0, totalInterest:0};
-  let rem = debts.filter(d=>d.balance>0).map(d=>({...d, balance:parseFloat(d.balance)}));
-  if (strategy==='avalanche') rem.sort((a,b)=>b.rate-a.rate);
-  else rem.sort((a,b)=>a.balance-b.balance);
-  let months=0, totalInterest=0;
-  while (rem.length>0 && months<600) {
-    months++;
-    let extra = extraPerMonth;
-    rem = rem.map(d => {
-      const interest = d.balance*d.rate/100/12;
-      totalInterest += interest;
-      const payment = Math.min(d.min, d.balance+interest);
-      return {...d, balance:d.balance+interest-payment};
-    }).filter(d=>d.balance>0.01);
-    if (rem.length>0 && extra>0) {
-      rem[0].balance = Math.max(0, rem[0].balance-extra);
-      if (rem[0].balance<0.01) rem.shift();
-    }
+// ── SMART SPREAD ──
+// When balance goes up we don't know exactly when each purchase happened.
+// We spread the total proportionally across calendar months since the last
+// recorded transaction for that card — so the monthly analytics picture
+// reflects reality rather than one big spike on update day.
+async function recordSpread(debtName,totalSpent,todayMid,balanceBefore,balanceAfter,category,person,note){
+  if(totalSpent<=0)return;
+  const lastTx=history.find(h=>h.debtName===debtName&&h.type==='charge');
+  let winStart;
+  if(lastTx){const ld=parseLD(lastTx.date);winStart=new Date(ld.getFullYear(),ld.getMonth(),ld.getDate());}
+  else{winStart=new Date(todayMid.getFullYear(),todayMid.getMonth(),1);}
+  const totalDays=Math.max(1,Math.round((todayMid-winStart)/(1000*60*60*24)));
+  const buckets={};
+  let cur=new Date(winStart);
+  while(cur<=todayMid){
+    const key=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0');
+    if(!buckets[key]){buckets[key]={days:0,lastDay:new Date(cur)};}
+    buckets[key].days++;buckets[key].lastDay=new Date(cur);
+    cur.setDate(cur.getDate()+1);
   }
-  return {months, totalInterest};
+  const entries=Object.entries(buckets);
+  let remaining=totalSpent;
+  for(let i=0;i<entries.length;i++){
+    const[,bucket]=entries[i];const isLast=i===entries.length-1;
+    const amount=isLast?parseFloat(remaining.toFixed(2)):parseFloat((totalSpent*bucket.days/totalDays).toFixed(2));
+    remaining-=amount;if(amount<=0)continue;
+    const dateStr=bucket.lastDay.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+    const tx=await dbAddTx({debtName,amount,date:dateStr,type:'charge',balanceBefore,balanceAfter,category,person,note});
+    if(tx)history.unshift(tx);
+  }
 }
 
-function renderPlan() {
-  const extra = parseFloat(document.getElementById('plan-extra')?.value)||0;
-  const el    = document.getElementById('plan-output');
-  const sumEl = document.getElementById('plan-summary');
-  if (!debts.length) {
-    el.innerHTML   = `<div class="empty"><div class="empty-icon">📊</div>Add debts first.</div>`;
-    sumEl.innerHTML = '';
-    return;
-  }
-  const active = debts.filter(d=>d.balance>0);
-  let sorted = [...active];
-  sorted.sort(planStrategy==='avalanche' ? (a,b)=>b.rate-a.rate : (a,b)=>a.balance-b.balance);
-  const base      = simPayoff(0, planStrategy);
-  const withExtra = simPayoff(extra, planStrategy);
-  function pd(m) {
-    const d=new Date(); d.setMonth(d.getMonth()+m);
-    return d.toLocaleDateString('en-US',{month:'short',year:'numeric'});
-  }
-  el.innerHTML = `<div class="card">` + sorted.map((d,i) => {
-    const isTarget = i===0;
-    const payment  = isTarget ? d.min+extra : d.min;
-    const mr = d.rate/100/12;
-    let months;
-    if (mr===0) months = payment>0 ? d.balance/payment : 999;
-    else { const r=(mr*d.balance)/payment; months = r>=1?999:-Math.log(1-r)/Math.log(1+mr); }
-    const dateStr = months>=999 ? 'Increase payment' : pd(Math.ceil(months));
-    const intMo   = (d.balance*d.rate/100/12).toFixed(0);
-    return `<div class="plan-step">
-      <div class="step-num">${i+1}</div>
-      <div style="flex:1">
-        <div class="step-name">${d.name}</div>
-        <div class="step-detail">
-          Pay <strong>$${payment.toFixed(0)}/mo</strong> · ${months<999?'~'+Math.ceil(months)+' months':'∞'} · ${dateStr}
-          <br>${d.rate>0?`$${intMo}/mo in interest (${d.rate}% APR)`:'0% APR — no interest cost'}
-        </div>
-        ${isTarget&&extra>0 ? `<span class="step-badge">← Put extra here</span>` : ''}
-      </div>
-    </div>`;
-  }).join('') + `</div>`;
-
-  const saved   = base.months - withExtra.months;
-  const intSaved= base.totalInterest - withExtra.totalInterest;
-  sumEl.innerHTML = `
-    <div class="card">
-      <div class="section-title">Your Payoff Timeline</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
-          <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:5px">Minimums only</div>
-          <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--red)">${pd(base.months)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px">$${Math.round(base.totalInterest).toLocaleString()} in interest</div>
-        </div>
-        <div style="background:rgba(0,229,160,.04);border:1px solid rgba(0,229,160,.2);border-radius:12px;padding:14px;text-align:center">
-          <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:5px">+$${extra} extra</div>
-          <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--accent)">${pd(withExtra.months)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px">$${Math.round(withExtra.totalInterest).toLocaleString()} in interest</div>
-        </div>
-      </div>
-      ${saved>0?`<div style="text-align:center;font-size:13px;color:var(--accent);padding:10px;background:rgba(0,229,160,.05);border-radius:10px">$${extra}/mo extra saves <strong>$${Math.round(intSaved).toLocaleString()}</strong> and <strong>${saved} months</strong> of payments</div>`:'<div style="text-align:center;font-size:12px;color:var(--muted)">Enter an extra payment above to see how much time and money you save.</div>'}
-    </div>
-    <div class="card" style="background:rgba(0,229,160,.02);border-color:rgba(0,229,160,.12)">
-      <div style="font-size:10px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">How ${planStrategy} works</div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.75">${planStrategy==='avalanche'
-        ? 'Pay minimums on everything. Dump all extra cash on the <strong style="color:var(--text)">highest interest rate</strong> first. Once it\'s gone, roll that payment into the next debt. Saves the most money mathematically.'
-        : 'Pay minimums on everything. Dump all extra cash on the <strong style="color:var(--text)">smallest balance</strong> first. Quick wins build momentum. Roll each freed-up payment into the next debt.'}</div>
-    </div>`;
+// ── ANALYTICS ──
+function setAP(p){
+  analyticsPerson=p;
+  ['mendel','rivka','both'].forEach(x=>{const b=document.getElementById('ap-'+x);if(b)b.classList.toggle('active',x===p);});
+  renderAnalytics();
 }
-
-// ═══════════════════════════════════════════
-// MONEY
-// ═══════════════════════════════════════════
-function switchMoneyTab(name) {
-  ['budget','spending','assets','insights'].forEach(t => {
-    document.getElementById('msub-'+t).style.display = t===name ? 'block' : 'none';
-    const btn = document.getElementById('mtab-'+t);
-    if (btn) btn.className = t===name ? 'btn btn-sm' : 'btn btn-sm btn-ghost';
+function renderAnalytics(){
+  const el=document.getElementById('analytics-out');
+  const filtered=analyticsPerson==='both'?history:history.filter(h=>(h.person||'mendel')===analyticsPerson);
+  const charges=filtered.filter(h=>h.type==='charge');
+  if(!filtered.length){el.innerHTML='<div class="es"><div class="es-icon">📊</div><p>No data yet.<br>Log expenses to see analytics.</p></div>';return;}
+  const now=new Date();
+  // monthly buckets
+  const monthly={};
+  filtered.forEach(tx=>{
+    const d=parseLD(tx.date);if(!d||isNaN(d))return;
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    if(!monthly[key])monthly[key]={spent:0,paid:0};
+    if(tx.type==='charge')monthly[key].spent+=tx.amount;else monthly[key].paid+=tx.amount;
   });
-  if (name==='assets')   renderAssets();
-  if (name==='insights') renderInsights();
-  if (name==='spending') renderSpending();
-}
+  const allMonths=Object.keys(monthly).sort();
+  const recent6=allMonths.slice(-6);
+  const thisKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const thisM=monthly[thisKey]||{spent:0,paid:0};
+  const thisMonthName=now.toLocaleDateString('en-US',{month:'long'});
+  const rd=recent6.map(k=>monthly[k]);
+  const avgSpent=rd.length?rd.reduce((s,m)=>s+m.spent,0)/rd.length:0;
+  const avgPaid=rd.length?rd.reduce((s,m)=>s+m.paid,0)/rd.length:0;
+  const netMo=avgPaid-avgSpent;
 
-function renderMoney() {
-  document.getElementById('income-main').value = budget.income?.main||'';
-  document.getElementById('income-side').value = budget.income?.side||'';
-  renderExpCat('fixed','fixed-list');
-  renderExpCat('variable','var-list');
-  renderBudgetSummary();
-}
+  // category breakdown this month
+  const catTotals={};
+  charges.forEach(tx=>{
+    const d=parseLD(tx.date);if(!d)return;
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    if(key!==thisKey)return;
+    const cat=tx.category||'other';catTotals[cat]=(catTotals[cat]||0)+tx.amount;
+  });
+  const topCats=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
-function saveBudgetIncome() {
-  if (!budget.income) budget.income={main:0,side:0};
-  budget.income.main = parseFloat(document.getElementById('income-main').value)||0;
-  budget.income.side = parseFloat(document.getElementById('income-side').value)||0;
-  dbSaveBudget(budget);
-  renderBudgetSummary();
-}
+  // trend
+  let trendMsg='',trendColor='var(--text2)';
+  if(recent6.length>=3){
+    const h=Math.floor(recent6.length/2);
+    const early=recent6.slice(0,h).reduce((s,k)=>s+monthly[k].spent,0)/h;
+    const late=recent6.slice(-h).reduce((s,k)=>s+monthly[k].spent,0)/h;
+    const delta=late-early;
+    if(Math.abs(delta)<20)trendMsg='Spending is stable';
+    else if(delta>0){trendMsg='Spending up ~$'+Math.round(delta)+'/mo';trendColor='var(--red)';}
+    else{trendMsg='Spending down ~$'+Math.round(Math.abs(delta))+'/mo';trendColor='var(--green)';}
+  }
 
-function renderExpCat(type, elId) {
-  const list = type==='fixed' ? budget.fixed : budget.variable;
-  document.getElementById(elId).innerHTML = (list||[]).map((item,i) => `
-    <div class="exp-row">
-      <span class="exp-name">${item.name}</span>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-        <input type="number" value="${item.amt||0}" min="0"
-          style="width:86px;text-align:right;padding:6px 8px;font-size:14px"
-          onchange="updateExp('${type}',${i},this.value)">
-        <button class="exp-del" onclick="removeExp('${type}',${i})">×</button>
-      </div>
-    </div>`).join('');
-}
+  // bar chart
+  const maxV=Math.max(...recent6.map(k=>Math.max(monthly[k].spent,monthly[k].paid)),1);
+  const bars=recent6.map(k=>{
+    const[y,m]=k.split('-');
+    const sh=Math.max(3,(monthly[k].spent/maxV)*72);const ph=Math.max(3,(monthly[k].paid/maxV)*72);
+    return '<div class="mbg"><div class="mb spent" style="height:'+sh+'px" title="Spent $'+Math.round(monthly[k].spent)+'"></div><div class="mb paid" style="height:'+ph+'px" title="Paid $'+Math.round(monthly[k].paid)+'"></div></div>';
+  }).join('');
+  const barLabels=recent6.map(k=>{const[y,m]=k.split('-');return '<div class="mbl">'+new Date(parseInt(y),parseInt(m)-1,1).toLocaleDateString('en-US',{month:'short'})+'</div>';}).join('');
 
-function updateExp(type, i, val) {
-  const list = type==='fixed' ? budget.fixed : budget.variable;
-  list[i].amt = parseFloat(val)||0;
-  dbSaveBudget(budget);
-  renderBudgetSummary();
-}
-function removeExp(type, i) {
-  if (type==='fixed') budget.fixed.splice(i,1); else budget.variable.splice(i,1);
-  dbSaveBudget(budget);
-  renderExpCat(type, type==='fixed'?'fixed-list':'var-list');
-  renderBudgetSummary();
-}
-function addExpense(type) {
-  const nid  = type==='fixed'?'fixed-new-name':'var-new-name';
-  const aid  = type==='fixed'?'fixed-new-amt':'var-new-amt';
-  const name = document.getElementById(nid).value.trim();
-  const amt  = parseFloat(document.getElementById(aid).value)||0;
-  if (!name) { toast('Enter a name.', true); return; }
-  if (type==='fixed') budget.fixed.push({name,amt}); else budget.variable.push({name,amt});
-  document.getElementById(nid).value='';
-  document.getElementById(aid).value='';
-  dbSaveBudget(budget);
-  renderExpCat(type, type==='fixed'?'fixed-list':'var-list');
-  renderBudgetSummary();
-}
+  const thisNet=thisM.paid-thisM.spent;
+  let html='';
 
-function renderBudgetSummary() {
-  const income   = (budget.income?.main||0)+(budget.income?.side||0);
-  const fixed    = (budget.fixed||[]).reduce((s,x)=>s+(x.amt||0),0);
-  const variable = (budget.variable||[]).reduce((s,x)=>s+(x.amt||0),0);
-  const debtMins = debts.reduce((s,d)=>s+d.min,0);
-  const total    = fixed+variable+debtMins;
-  const leftover = income-total;
-  const isOver   = leftover<0;
-  if (!income) { document.getElementById('budget-summary-cards').innerHTML=''; document.getElementById('budget-advice').innerHTML=''; return; }
-  const pct = v => income>0 ? Math.min(100,(v/income*100)).toFixed(0) : 0;
-  document.getElementById('budget-summary-cards').innerHTML = `
-    <div class="budget-summary">
-      <div class="budget-stat"><div class="budget-stat-label">Income</div><div class="budget-stat-val green">$${income.toLocaleString()}</div></div>
-      <div class="budget-stat"><div class="budget-stat-label">${isOver?'Over Budget':'Free Cash'}</div><div class="budget-stat-val ${isOver?'red':'green'}">${isOver?'-':''}$${Math.abs(leftover).toFixed(0)}</div></div>
-      <div class="budget-stat"><div class="budget-stat-label">Expenses</div><div class="budget-stat-val yellow">$${total.toLocaleString()}</div></div>
-      <div class="budget-stat"><div class="budget-stat-label">Debt Mins</div><div class="budget-stat-val red">$${debtMins.toLocaleString()}</div></div>
-    </div>
-    <div class="card" style="margin-bottom:12px">
-      <div class="bar-row"><div class="bar-label">Fixed</div><div class="bar-track"><div class="bar-fill" style="width:${pct(fixed)}%;background:var(--yellow)"></div></div><div class="bar-pct">${pct(fixed)}%</div></div>
-      <div class="bar-row"><div class="bar-label">Variable</div><div class="bar-track"><div class="bar-fill" style="width:${pct(variable)}%;background:#ff9a56"></div></div><div class="bar-pct">${pct(variable)}%</div></div>
-      <div class="bar-row"><div class="bar-label">Debt mins</div><div class="bar-track"><div class="bar-fill" style="width:${pct(debtMins)}%;background:var(--red)"></div></div><div class="bar-pct">${pct(debtMins)}%</div></div>
-      <div class="bar-row"><div class="bar-label">Free</div><div class="bar-track"><div class="bar-fill" style="width:${isOver?0:pct(leftover)}%;background:var(--accent)"></div></div><div class="bar-pct">${isOver?'0':pct(leftover)}%</div></div>
-    </div>`;
-  let advice;
-  if (isOver)          advice=`🚨 You're spending <strong>$${Math.abs(leftover).toFixed(0)} more than you earn</strong>/mo. Close this gap before adding extra debt payments.`;
-  else if (leftover<200) advice=`⚠️ Only <strong>$${leftover.toFixed(0)}/mo</strong> free — tight. Build a small $500 buffer before attacking debt aggressively.`;
-  else                   advice=`✅ <strong>$${leftover.toFixed(0)}/mo</strong> available. Set your extra payment in the <strong>Plan</strong> tab to put it to work.`;
-  document.getElementById('budget-advice').innerHTML = `<div style="background:rgba(0,229,160,.04);border:1px solid rgba(0,229,160,.12);border-radius:12px;padding:16px;font-size:13px;color:var(--muted);line-height:1.7">${advice}</div>`;
-}
+  // this month summary
+  html+='<div class="sg sg2" style="margin-bottom:4px">'+
+    '<div class="sbox"><div class="slabel">'+thisMonthName+' Spent</div><div class="sval red">$'+Math.round(thisM.spent).toLocaleString()+'</div></div>'+
+    '<div class="sbox"><div class="slabel">'+thisMonthName+' Paid</div><div class="sval green">$'+Math.round(thisM.paid).toLocaleString()+'</div></div></div>';
+  html+='<div class="sbox" style="margin-bottom:10px;text-align:center">'+
+    '<div class="slabel">Net This Month</div>'+
+    '<div class="sval '+(thisNet>=0?'green':'red')+'">'+(thisNet>=0?'+':'-')+'$'+Math.round(Math.abs(thisNet)).toLocaleString()+'</div>'+
+    '<div class="ssub">'+(thisNet>=0?'Debt is dropping ✓':'Debt is growing ⚠️')+'</div></div>';
 
-// ── ASSETS / NET WORTH ──────────────────────
-function totalAssets()      { return assets.reduce((s,a)=>s+(parseFloat(a.value)||0),0); }
-function totalLiabilities() { return debts.reduce((s,d)=>s+(parseFloat(d.balance)||0),0); }
-function netWorth()         { return totalAssets()-totalLiabilities(); }
+  // bar chart
+  if(recent6.length>1){
+    html+='<div class="card card-sm" style="margin-bottom:10px">'+
+      '<div class="shd" style="margin-top:0;margin-bottom:12px">Spending vs Payments</div>'+
+      '<div class="mbars">'+bars+'</div>'+
+      '<div style="display:flex">'+barLabels+'</div>'+
+      '<div style="display:flex;gap:14px;margin-top:10px">'+
+        '<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:8px;height:8px;border-radius:2px;background:rgba(248,113,113,.55)"></div>Spent</div>'+
+        '<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:8px;height:8px;border-radius:2px;background:rgba(52,211,153,.65)"></div>Paid</div>'+
+      '</div>'+
+      (trendMsg?'<div style="margin-top:10px;font-size:12px;color:'+trendColor+';text-align:center">'+trendMsg+'</div>':'')+
+      '</div>';
+  }
 
-function renderAssets() {
-  const nw=netWorth(), ta=totalAssets(), tl=totalLiabilities(), pos=nw>=0;
-  document.getElementById('nw-summary').innerHTML = `
-    <div class="card" style="margin-bottom:16px">
-      <div class="nw-hero">
-        <div class="nw-hero-label">Net Worth</div>
-        <div class="nw-hero-val ${pos?'pos':'neg'}">${pos?'':'-'}$${Math.abs(Math.round(nw)).toLocaleString()}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">${pos?'Your assets exceed your debt 🎉':`$${Math.abs(Math.round(nw)).toLocaleString()} more debt than assets — every payment closes the gap`}</div>
-      </div>
-      <div class="nw-row">
-        <div class="nw-col"><div class="nw-col-label">Assets</div><div class="nw-col-val" style="color:var(--accent)">$${Math.round(ta).toLocaleString()}</div></div>
-        <div class="nw-col"><div class="nw-col-label">Debt</div><div class="nw-col-val" style="color:var(--red)">$${Math.round(tl).toLocaleString()}</div></div>
-        <div class="nw-col"><div class="nw-col-label">Ratio</div><div class="nw-col-val" style="color:var(--yellow)">${tl>0?(ta/tl).toFixed(2):'∞'}x</div></div>
-      </div>
-    </div>`;
-  const el = document.getElementById('asset-list');
-  if (!assets.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">💰</div>Add assets above — savings, investments, car value, etc.</div>`; return; }
-  el.innerHTML = `<div class="card">`+assets.map(a=>`
-    <div class="asset-row">
-      <div><div class="asset-name">${a.name}</div><div class="asset-cat">${a.category}</div></div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="color:var(--muted);font-size:13px">$</span>
-        <input class="asset-val-input" type="number" value="${a.value}" min="0" onchange="updateAssetValue('${a.id}',this.value)">
-        <button class="btn btn-sm btn-danger" onclick="deleteAsset('${a.id}')">×</button>
-      </div>
-    </div>`).join('')+`</div>`;
-}
-async function addAsset() {
-  const name=document.getElementById('asset-name').value.trim(), category=document.getElementById('asset-category').value, value=parseFloat(document.getElementById('asset-value').value)||0;
-  if (!name) { toast('Enter a name.', true); return; }
-  const a = await dbAddAsset({name,category,value});
-  if (!a) return;
-  assets.push(a);
-  document.getElementById('asset-name').value=''; document.getElementById('asset-value').value='';
-  await autoSnapshot(); renderAssets(); toast('Asset added!');
-}
-async function updateAssetValue(id, val) {
-  const a=assets.find(x=>x.id===id); a.value=parseFloat(val)||0;
-  await dbUpdateAsset(a); await autoSnapshot(); renderAssets();
-}
-async function deleteAsset(id) {
-  if (!confirm('Delete this asset?')) return;
-  await dbDeleteAsset(id); assets=assets.filter(a=>a.id!==id);
-  await autoSnapshot(); renderAssets(); toast('Removed.');
-}
+  // averages
+  html+='<div class="sg sg2" style="margin-bottom:10px">'+
+    '<div class="sbox"><div class="slabel">Avg Spent / Mo</div><div class="sval amber">$'+Math.round(avgSpent).toLocaleString()+'</div></div>'+
+    '<div class="sbox"><div class="slabel">Net Avg / Mo</div><div class="sval '+(netMo>=0?'green':'red')+'">'+(netMo>=0?'+':'-')+'$'+Math.round(Math.abs(netMo)).toLocaleString()+'</div><div class="ssub">'+(netMo>=0?'reducing debt':'growing debt')+'</div></div></div>';
 
-// ── INSIGHTS ─────────────────────────────────
-function renderInsights() {
-  const el=document.getElementById('insights-output');
-  const income=(budget?.income?.main||0)+(budget?.income?.side||0);
-  const fixed=(budget?.fixed||[]).reduce((s,x)=>s+(x.amt||0),0);
-  const variable=(budget?.variable||[]).reduce((s,x)=>s+(x.amt||0),0);
-  const debtMins=debts.reduce((s,d)=>s+d.min,0);
-  const leftover=income-fixed-variable-debtMins;
+  // categories
+  if(topCats.length){
+    const catTotal=topCats.reduce((s,[,v])=>s+v,0);
+    html+='<div class="card card-sm" style="margin-bottom:10px"><div class="shd" style="margin-top:0">This Month by Category</div>';
+    topCats.forEach(([cat,amt])=>{
+      const pct=catTotal>0?(amt/catTotal*100).toFixed(0):0;
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'+
+        '<span style="font-size:16px">'+(CE[cat]||'📦')+'</span>'+
+        '<div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
+          '<span style="font-size:13px;font-weight:500">'+(CL[cat]||cat)+'</span>'+
+          '<span style="font-family:JetBrains Mono,monospace;font-size:13px;color:var(--red)">$'+Math.round(amt).toLocaleString()+'</span></div>'+
+          '<div style="height:3px;background:var(--surface);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:var(--accent);border-radius:99px"></div></div></div>'+
+        '<span style="font-size:11px;color:var(--text3);width:28px;text-align:right">'+pct+'%</span></div>';
+    });
+    html+='</div>';
+  }
+
+  // insights
   const monthlyInt=debts.reduce((s,d)=>s+(d.balance*d.rate/100/12),0);
-  if (!income&&!debts.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">🔍</div>Add debts and budget info to unlock insights.</div>`; return; }
-  const insights=[];
-  if (income&&debts.length) {
-    const dti=(debtMins/income)*100;
-    if (dti>36) insights.push({type:'bad',icon:'🚨',title:`Debt payments are ${dti.toFixed(0)}% of your income`,text:`Over <strong>36%</strong> is the danger zone. Your $${debtMins}/mo in minimums leaves little room for extra payments or emergencies.`});
-    else if (dti>20) insights.push({type:'warn',icon:'⚠️',title:`Debt payments at ${dti.toFixed(0)}% of income`,text:`Healthy is under 20%. You're above that but workable — focus on eliminating one debt at a time to lower this.`});
-    else insights.push({type:'good',icon:'✅',title:`Healthy debt ratio: ${dti.toFixed(0)}% of income`,text:`Under 20% — you have genuine flexibility. Use it to attack debt faster.`});
-  }
-  if (debts.length&&monthlyInt>100) {
-    insights.push({type:'bad',icon:'🔥',title:`$${monthlyInt.toFixed(0)}/mo going to pure interest`,text:`That's <strong>$${Math.round(monthlyInt*12).toLocaleString()}/year</strong> that reduces your balance by zero. Every extra payment you make directly cuts this number.`});
-  }
-  if (debts.length) {
-    const worst=[...debts].filter(d=>d.balance>0).sort((a,b)=>(b.balance*b.rate/100/12)-(a.balance*a.rate/100/12))[0];
-    if (worst&&worst.rate>0) insights.push({type:'warn',icon:'💸',title:`${worst.name} is your biggest drain`,text:`At ${worst.rate}% APR on $${Math.round(worst.balance).toLocaleString()}, it costs <strong>$${(worst.balance*worst.rate/100/12).toFixed(0)}/mo</strong>. Your avalanche plan targets this first.`});
-  }
-  if (income&&leftover>0) {
-    const base=simPayoff(0,'avalanche'), better=simPayoff(Math.round(leftover*.5),'avalanche');
-    const saved=base.months-better.months;
-    if (saved>2) insights.push({type:'good',icon:'🗓️',title:`Putting half your surplus toward debt saves ${saved} months`,text:`$${Math.round(leftover*.5)}/mo extra gets you debt-free <strong>${saved} months sooner</strong> and saves $${Math.round(base.totalInterest-better.totalInterest).toLocaleString()} in interest.`});
-  }
-  if (debts.length>1) {
-    const small=[...debts].filter(d=>d.balance>0).sort((a,b)=>a.balance-b.balance)[0];
-    if (small&&small.balance<500) insights.push({type:'good',icon:'⚡',title:`Quick win: ${small.name} only has $${Math.round(small.balance)} left`,text:`A couple extra payments eliminates it entirely and frees <strong>$${small.min}/mo</strong> to roll into the next debt.`});
-  }
-  const order={bad:0,warn:1,good:2};
-  insights.sort((a,b)=>order[a.type]-order[b.type]);
-  el.innerHTML = insights.length ? insights.map(ins=>`
-    <div class="insight ${ins.type}">
-      <div class="insight-icon">${ins.icon}</div>
-      <div>
-        <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:3px">${ins.title}</div>
-        <div class="insight-text">${ins.text}</div>
-      </div>
-    </div>`).join('') : `<div class="empty"><div class="empty-icon">🎉</div>No major issues found. Keep going.</div>`;
-}
+  const totalDebt=totalLiabilities();
+  const ins=[];
+  if(monthlyInt>150)ins.push({type:'bad',emoji:'🔥',title:'$'+monthlyInt.toFixed(0)+'/mo going to interest',text:'That\'s $'+Math.round(monthlyInt*12).toLocaleString()+'/year reducing your balance by zero. Every extra payment cuts this directly.'});
+  if(netMo<0)ins.push({type:'bad',emoji:'📈',title:'Debt is growing on average',text:'Spending ~$'+Math.round(Math.abs(netMo))+'/mo more than paying. Closing this gap is the most impactful move.'});
+  else if(netMo>0)ins.push({type:'good',emoji:'📉',title:'Reducing debt ~$'+Math.round(netMo)+'/mo average',text:'Good trajectory. Even small extra payments compound significantly over time.'});
+  if(topCats.length&&avgSpent>0&&topCats[0][1]>avgSpent*0.35)ins.push({type:'warn',emoji:'💡',title:(CL[topCats[0][0]]||topCats[0][0])+' is '+Math.round(topCats[0][1]/avgSpent*100)+'% of spending',text:'$'+Math.round(topCats[0][1])+' this month in '+((CL[topCats[0][0]])||topCats[0][0]).toLowerCase()+'. Worth reviewing if there\'s room to trim.'});
+  if(totalDebt>0&&netMo>0){const mo=Math.ceil(totalDebt/netMo);if(mo<120){const d=new Date();d.setMonth(d.getMonth()+mo);ins.push({type:'info',emoji:'🗓️',title:'Debt-free by '+d.toLocaleDateString('en-US',{month:'short',year:'numeric'}),text:mo+' months at your current net paydown of $'+Math.round(netMo)+'/mo.'});}}
+  if(ins.length){html+='<div class="shd">Insights</div>';ins.forEach(i=>{html+='<div class="irow '+i.type+'"><div class="iemoji">'+i.emoji+'</div><div><div class="ititle">'+i.title+'</div><div class="itext">'+i.text+'</div></div></div>';});}
 
-
-// ═══════════════════════════════════════════
-// SPENDING ANALYTICS
-// Reads the full transaction history to build
-// a real financial picture: how much spent vs
-// paid per card, per month, net trend, projections
-// ═══════════════════════════════════════════
-function renderSpending() {
-  const el = document.getElementById('spending-output');
-
-  // Separate charges (spending) from payments
-  const charges  = history.filter(h => h.type === 'charge');
-  const payments = history.filter(h => h.type !== 'charge');
-
-  if (!history.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📊</div>No transaction history yet.<br><br>Update your balances weekly — every increase is logged as spending, every decrease as a payment. Over time this builds your real financial picture.</div>`;
-    return;
-  }
-
-  const now = new Date();
-
-  // ── Helper: parse date string to midnight local ──
-  function pd(str) {
-    const d = new Date(str);
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  }
-
-  // ── Build monthly buckets: { 'YYYY-MM': { cardName: {spent, paid} } } ──
-  const monthly = {};
-  history.forEach(tx => {
-    const d = pd(tx.date);
-    if (isNaN(d)) return;
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    if (!monthly[key]) monthly[key] = {};
-    if (!monthly[key][tx.debtName]) monthly[key][tx.debtName] = {spent:0, paid:0};
-    if (tx.type === 'charge') monthly[key][tx.debtName].spent += tx.amount;
-    else                      monthly[key][tx.debtName].paid  += tx.amount;
-  });
-
-  const allMonths   = Object.keys(monthly).sort();
-  const recentMonths = allMonths.slice(-6);
-
-  // ── Monthly totals ──
-  const monthlyTotals = recentMonths.map(m => {
-    const cards = Object.values(monthly[m]);
-    return {
-      month: m,
-      spent: cards.reduce((s,c) => s+c.spent, 0),
-      paid:  cards.reduce((s,c) => s+c.paid,  0),
-    };
-  });
-
-  const avgSpend = monthlyTotals.length ? monthlyTotals.reduce((s,m)=>s+m.spent,0)/monthlyTotals.length : 0;
-  const avgPaid  = monthlyTotals.length ? monthlyTotals.reduce((s,m)=>s+m.paid, 0)/monthlyTotals.length : 0;
-  const netMo    = avgPaid - avgSpend;
-
-  // ── This month ──
-  const thisKey    = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const thisMonth  = monthly[thisKey] || {};
-  const thisSpent  = Object.values(thisMonth).reduce((s,c) => s+c.spent, 0);
-  const thisPaid   = Object.values(thisMonth).reduce((s,c) => s+c.paid,  0);
-  const thisMonthName = now.toLocaleDateString('en-US', {month:'long'});
-
-  // ── Per-card lifetime totals ──
-  const cardTotals = {};
-  history.forEach(tx => {
-    if (!cardTotals[tx.debtName]) cardTotals[tx.debtName] = {spent:0, paid:0};
-    if (tx.type === 'charge') cardTotals[tx.debtName].spent += tx.amount;
-    else                      cardTotals[tx.debtName].paid  += tx.amount;
-  });
-
-  // ── Spend trend (first 3 months avg vs last 3 months avg) ──
-  let trendMsg = '', trendColor = 'var(--muted)';
-  if (monthlyTotals.length >= 3) {
-    const half  = Math.floor(monthlyTotals.length / 2);
-    const early = monthlyTotals.slice(0, half).reduce((s,m)=>s+m.spent,0) / half;
-    const late  = monthlyTotals.slice(-half).reduce((s,m)=>s+m.spent,0) / half;
-    const delta = late - early;
-    if (Math.abs(delta) < 30)    { trendMsg = 'Spending is consistent month to month'; trendColor = 'var(--muted)'; }
-    else if (delta > 0)          { trendMsg = `Spending trending up ~$${Math.round(delta)}/mo`; trendColor = 'var(--red)'; }
-    else                         { trendMsg = `Spending trending down ~$${Math.round(Math.abs(delta))}/mo`; trendColor = 'var(--accent)'; }
-  }
-
-  // ── Projections ──
-  const totalDebt = debts.reduce((s,d) => s+d.balance, 0);
-  function project(months) {
-    return Math.max(0, totalDebt - (netMo * months));
-  }
-
-  const fmtD = n => '$' + Math.round(Math.abs(n)).toLocaleString();
-  const monthLabel = m => {
-    const [y,mo] = m.split('-');
-    return new Date(parseInt(y), parseInt(mo)-1, 1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
-  };
-
-  let html = '';
-
-  // ── 1. This month so far ──
-  html += `<div class="card">
-    <div class="card-title">${thisMonthName} so far</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
-      <div style="background:var(--bg);border:1px solid rgba(255,107,107,.25);border-radius:12px;padding:14px;text-align:center">
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:6px">Charged</div>
-        <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--red)">${fmtD(thisSpent)}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">new spending</div>
-      </div>
-      <div style="background:var(--bg);border:1px solid rgba(0,229,160,.25);border-radius:12px;padding:14px;text-align:center">
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:6px">Paid</div>
-        <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--accent)">${fmtD(thisPaid)}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">payments made</div>
-      </div>
-    </div>
-    ${thisSpent > 0 || thisPaid > 0 ? `
-    <div style="margin-top:14px;padding:12px;border-radius:10px;background:var(--bg);border:1px solid var(--border);text-align:center">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:1px;text-transform:uppercase">Net this month</div>
-      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:${thisPaid>=thisSpent?'var(--accent)':'var(--red)'}">
-        ${thisPaid >= thisSpent ? '+' : '-'}${fmtD(Math.abs(thisPaid - thisSpent))}
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:3px">
-        ${thisPaid >= thisSpent ? 'debt dropped this month ✅' : 'debt grew this month ⚠️'}
-      </div>
-    </div>` : ''}
-  </div>`;
-
-  // ── 2. Monthly history table ──
-  if (monthlyTotals.length > 0) {
-    html += `<div class="card">
-      <div class="card-title">Month by Month</div>
-      <div style="margin-top:4px">`;
-    [...monthlyTotals].reverse().forEach(m => {
-      const net = m.paid - m.spent;
-      const isGood = net >= 0;
-      html += `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)">
-          <div style="font-size:12px;font-weight:500;width:52px;flex-shrink:0">${monthLabel(m.month)}</div>
-          <div style="display:flex;gap:14px;font-size:12px;flex:1;justify-content:center">
-            <span style="color:var(--red)">−${fmtD(m.spent)}</span>
-            <span style="color:var(--accent)">+${fmtD(m.paid)}</span>
-          </div>
-          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:${isGood?'var(--accent)':'var(--red)'};text-align:right;width:68px;flex-shrink:0">
-            ${isGood?'↓':'↑'}${fmtD(Math.abs(net))}
-          </div>
-        </div>`;
+  // month table
+  if(allMonths.length>1){
+    html+='<div class="card card-sm" style="margin-bottom:10px"><div class="shd" style="margin-top:0">Month by Month</div>';
+    [...allMonths].reverse().slice(0,6).forEach(k=>{
+      const[y,m]=k.split('-');
+      const label=new Date(parseInt(y),parseInt(m)-1,1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+      const net=monthly[k].paid-monthly[k].spent;
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">'+
+        '<span style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--text2);width:48px;flex-shrink:0">'+label+'</span>'+
+        '<span style="font-size:12px;color:var(--red)">−$'+Math.round(monthly[k].spent).toLocaleString()+'</span>'+
+        '<span style="font-size:12px;color:var(--green)">+$'+Math.round(monthly[k].paid).toLocaleString()+'</span>'+
+        '<span style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:600;color:'+(net>=0?'var(--green)':'var(--red)')+'">'+( net>=0?'↓':'↑')+'$'+Math.round(Math.abs(net)).toLocaleString()+'</span></div>';
     });
-    html += `</div>
-      <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:11px;color:var(--muted)">
-        <span>Avg/mo: <span style="color:var(--red)">${fmtD(avgSpend)} spent</span></span>
-        <span><span style="color:var(--accent)">${fmtD(avgPaid)} paid</span></span>
-      </div>
-      ${trendMsg ? `<div style="font-size:12px;color:${trendColor};text-align:center;padding:8px;background:var(--bg);border-radius:8px">${trendMsg}</div>` : ''}
-    </div>`;
+    html+='</div>';
   }
+  el.innerHTML=html;
+}
 
-  // ── 3. Per-card breakdown ──
-  const cards = Object.entries(cardTotals).filter(([,v]) => v.spent > 0 || v.paid > 0)
-    .sort((a,b) => b[1].spent - a[1].spent);
-  if (cards.length) {
-    html += `<div class="card"><div class="card-title">By Card (all time)</div>`;
-    cards.forEach(([name, data]) => {
-      const net = data.paid - data.spent;
-      const totalActivity = data.spent + data.paid;
-      const spentPct = totalActivity > 0 ? (data.spent / totalActivity * 100).toFixed(0) : 0;
-      html += `
-        <div style="padding:14px 0;border-bottom:1px solid var(--border)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700">${name}</span>
-            <span style="font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid;color:${net>=0?'var(--accent)':'var(--red)'};border-color:${net>=0?'var(--accent)':'var(--red)'}">${net>=0?'paying down':'growing'}</span>
-          </div>
-          <div style="height:6px;background:var(--bg);border-radius:99px;overflow:hidden;margin-bottom:8px;border:1px solid var(--border)">
-            <div style="height:100%;width:${spentPct}%;background:var(--red);border-radius:99px"></div>
-          </div>
-          <div style="display:flex;gap:16px;font-size:12px">
-            <span><span style="color:var(--muted)">Spent </span><span style="color:var(--red)">${fmtD(data.spent)}</span></span>
-            <span><span style="color:var(--muted)">Paid </span><span style="color:var(--accent)">${fmtD(data.paid)}</span></span>
-            <span><span style="color:var(--muted)">Net </span><span style="color:${net>=0?'var(--accent)':'var(--red)'}">${net>=0?'+':'-'}${fmtD(Math.abs(net))}</span></span>
-          </div>
-        </div>`;
-    });
-    html += `</div>`;
+// ── PLAN ──
+function simPayoff(extra,strategy){
+  if(!debts.length)return{months:0,totalInterest:0};
+  let rem=debts.filter(d=>d.balance>0).map(d=>({...d,balance:parseFloat(d.balance)}));
+  if(strategy==='avalanche')rem.sort((a,b)=>b.rate-a.rate);else rem.sort((a,b)=>a.balance-b.balance);
+  let months=0,totalInterest=0;
+  while(rem.length>0&&months<600){
+    months++;let e=extra;
+    rem=rem.map(d=>{const int=d.balance*d.rate/100/12;totalInterest+=int;const pay=Math.min(d.min,d.balance+int);return{...d,balance:d.balance+int-pay};}).filter(d=>d.balance>0.01);
+    if(rem.length>0&&e>0){rem[0].balance=Math.max(0,rem[0].balance-e);if(rem[0].balance<0.01)rem.shift();}
   }
+  return{months,totalInterest};
+}
+function renderPlan(){
+  const el=document.getElementById('plan-out');
+  if(!debts.length){el.innerHTML='<div class="es"><div class="es-icon">📊</div><p>Add debts first to see your payoff plan.</p></div>';return;}
+  const extraEl=document.getElementById('plan-extra-in');
+  const extra=extraEl?parseFloat(extraEl.value)||0:0;
+  const active=debts.filter(d=>d.balance>0).sort(planStrategy==='avalanche'?(a,b)=>b.rate-a.rate:(a,b)=>a.balance-b.balance);
+  const base=simPayoff(0,'avalanche');const withExtra=simPayoff(extra,'avalanche');
+  function pd(m){const d=new Date();d.setMonth(d.getMonth()+m);return d.toLocaleDateString('en-US',{month:'short',year:'numeric'});}
+  const saved=base.months-withExtra.months;const intSaved=base.totalInterest-withExtra.totalInterest;
 
-  // ── 4. Projection ──
-  if (monthlyTotals.length >= 2 && netMo !== 0) {
-    html += `<div class="card">
-      <div class="card-title">Projection at current rate</div>
-      <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-        ${[3,6,12].map(mo => {
-          const proj = project(mo);
-          const better = proj < totalDebt;
-          return `<div style="background:var(--bg);border:1px solid ${better?'rgba(0,229,160,.2)':'rgba(255,107,107,.2)'};border-radius:10px;padding:12px;text-align:center">
-            <div style="font-size:10px;color:var(--muted);margin-bottom:5px">${mo} months</div>
-            <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:${better?'var(--accent)':'var(--red)'}">${fmtD(proj)}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:3px">${better?'↓ down':'↑ up'} ${fmtD(Math.abs(proj-totalDebt))}</div>
-          </div>`;
-        }).join('')}
-      </div>
-      <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center">
-        Based on net ${netMo>=0?'reduction':'increase'} of ${fmtD(Math.abs(netMo))}/mo average
-        ${netMo < 0 ? '<br><span style="color:var(--red)">⚠️ Spending more than paying — debt is growing</span>' : ''}
-      </div>
-    </div>`;
-  }
+  let html='<div class="pcrd">'+
+    '<div style="display:flex;gap:8px;margin-bottom:16px">'+
+      '<button class="btn btn-sm '+(planStrategy==='avalanche'?'':'btn-ghost')+'" onclick="setPlan(\'avalanche\')">Avalanche</button>'+
+      '<button class="btn btn-sm '+(planStrategy==='snowball'?'':'btn-ghost')+'" onclick="setPlan(\'snowball\')">Snowball</button>'+
+    '</div>'+
+    '<div class="fg" style="margin-bottom:0"><div class="flabel">Extra Monthly Payment ($)</div>'+
+    '<input type="number" id="plan-extra-in" placeholder="e.g. 700" value="'+(extra||'')+'" min="0" oninput="renderPlan()" style="font-family:JetBrains Mono,monospace"></div></div>';
 
-  el.innerHTML = html;
+  html+='<div class="pcrd"><div class="shd" style="margin-top:0">Attack Order</div>';
+  active.forEach((d,i)=>{
+    const payment=i===0?d.min+extra:d.min;
+    const mr=d.rate/100/12;
+    let months;
+    if(mr===0){months=payment>0?d.balance/payment:999;}
+    else{const r=(mr*d.balance)/payment;months=r>=1?999:-Math.log(1-r)/Math.log(1+mr);}
+    const dateStr=months>=999?'Increase payment':pd(Math.ceil(months));
+    html+='<div class="pstep"><div class="pnum">'+(i+1)+'</div><div style="flex:1">'+
+      '<div class="pname">'+d.name+'</div>'+
+      '<div class="pdetail">$'+payment.toFixed(0)+'/mo'+(months<999?' · ~'+Math.ceil(months)+' months':'')+' · '+dateStr+'<br>'+
+        (d.rate>0?'$'+(d.balance*d.rate/100/12).toFixed(0)+'/mo interest ('+d.rate+'% APR)':'0% APR — free to carry')+
+      '</div>'+
+      (i===0&&extra>0?'<span class="pbadge">All extra goes here</span>':'')+
+    '</div></div>';
+  });
+  html+='</div>';
+
+  html+='<div class="pcrd"><div class="shd" style="margin-top:0">Timeline</div>'+
+    '<div class="sg sg2" style="margin-bottom:'+(saved>0?'12':'0')+'px">'+
+      '<div class="sbox"><div class="slabel">Minimums only</div><div class="sval red" style="font-size:16px">'+pd(base.months)+'</div><div class="ssub">$'+Math.round(base.totalInterest).toLocaleString()+' in interest</div></div>'+
+      '<div class="sbox" style="border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.04)"><div class="slabel" style="color:var(--green)">+$'+(extra||0)+' extra</div><div class="sval green" style="font-size:16px">'+pd(withExtra.months)+'</div><div class="ssub">$'+Math.round(withExtra.totalInterest).toLocaleString()+' in interest</div></div>'+
+    '</div>'+
+    (saved>0?'<div style="text-align:center;font-size:13px;color:var(--green);padding:10px;background:rgba(52,211,153,.06);border-radius:8px">$'+extra+'/mo extra saves <strong>$'+Math.round(intSaved).toLocaleString()+'</strong> and <strong>'+saved+' months</strong></div>':'')+
+    '</div>';
+
+  html+='<div class="pcrd" style="background:rgba(124,106,255,.04);border-color:rgba(124,106,255,.2)">'+
+    '<div style="font-size:12px;color:var(--text2);line-height:1.75">'+
+      (planStrategy==='avalanche'?'<strong style="color:var(--text)">Avalanche:</strong> Pay minimums everywhere, dump all extra on the highest-rate debt. Mathematically saves the most money.':'<strong style="color:var(--text)">Snowball:</strong> Pay minimums everywhere, dump all extra on the smallest balance. Quick wins build momentum.')+
+    '</div></div>';
+
+  el.innerHTML=html;
+}
+function setPlan(s){planStrategy=s;renderPlan();}
+
+// ── HELPERS ──
+function toast(msg,isError=false){
+  const el=document.getElementById('toast');el.textContent=msg;
+  el.style.borderColor=isError?'rgba(248,113,113,.4)':'rgba(52,211,153,.3)';
+  el.style.color=isError?'var(--red)':'var(--text)';
+  el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);
 }
 
-
-// ═══════════════════════════════════════════
-// EXPORT / IMPORT / CLEAR
-// ═══════════════════════════════════════════
-function exportData() {
-  const data={version:2,exportedAt:new Date().toISOString(),debts,history,budget};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download=`debt-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
-  a.click(); URL.revokeObjectURL(url); toast('Backup downloaded!');
-}
-async function importData(input) {
-  const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    try {
-      const data=JSON.parse(e.target.result);
-      if (!data.debts&&!data.budget) { toast('Not a valid backup.',true); return; }
-      if (!confirm(`Import "${file.name}"? This overwrites your current data.`)) return;
-      if (data.debts) {
-        await sb.from('debts').delete().eq('user_id',currentUser.id);
-        for (const d of data.debts) await dbAddDebt(d);
-        debts=await dbLoadDebts();
-      }
-      if (data.budget) { budget=data.budget; await dbSaveBudget(budget); }
-      toast('Imported! Reloading…'); setTimeout(()=>location.reload(),1200);
-    } catch { toast('Could not read file.',true); }
-  };
-  reader.readAsText(file);
-}
-async function clearAllData() {
-  if (!confirm('Delete ALL your data permanently?')) return;
-  await sb.from('debts').delete().eq('user_id',currentUser.id);
-  await sb.from('payments').delete().eq('user_id',currentUser.id);
-  await sb.from('budgets').delete().eq('user_id',currentUser.id);
-  toast('Cleared. Reloading…'); setTimeout(()=>location.reload(),1200);
+// ── INIT ──
+async function initApp(user){
+  currentUser=user;showScreen('screen-app');renderHeader();
+  ['mendel','rivka'].forEach(p=>document.getElementById('lp-'+p).classList.toggle('active',p===currentPerson));
+  setAP(currentPerson);
+  document.getElementById('recent-tx').innerHTML='<div class="spin"></div>';
+  try{
+    [debts,history,assets]=await Promise.all([dbLoadDebts(),dbLoadHistory(),dbLoadAssets()]);
+    populateCards();renderRecentTx();await dbSnap(totalAssets(),totalLiabilities());
+  }catch(err){console.error('initApp error:',err);toast('Error loading data',true);}
 }
 
-// ═══════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════
-function fmt(n) { return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function toast(msg, isError=false) {
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.style.background=isError?'var(--red)':'var(--accent)'; el.style.color=isError?'#fff':'#000';
-  el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),3000);
-}
-
-// ═══════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════
-async function initApp(user) {
-  currentUser=user;
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('bottom-nav').style.display='flex';
-  document.getElementById('debt-list-home').innerHTML=`<div class="spinner"></div>`;
-  renderUserPill(user);
-  try {
-    [debts,history,budget,assets,snapshots] = await Promise.all([
-      dbLoadDebts(), dbLoadHistory(), dbLoadBudget(), dbLoadAssets(), dbLoadSnapshots()
-    ]);
-    renderHome();
-    await autoSnapshot();
-  } catch(err) {
-    console.error('initApp error:',err);
-    document.getElementById('debt-list-home').innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div>Error loading data. <button class="btn btn-sm" onclick="location.reload()">Retry</button></div>`;
-  }
-}
-
-let appInitialized=false;
-async function bootApp() {
-  console.log('[boot] Starting...');
+let appInit=false;
+async function bootApp(){
   const hash=window.location.hash;
-  if (hash.includes('access_token')) {
+  if(hash.includes('access_token')){
     const params=new URLSearchParams(hash.substring(1));
-    const at=params.get('access_token'), rt=params.get('refresh_token');
-    if (at&&rt) {
-      const {data,error}=await sb.auth.setSession({access_token:at,refresh_token:rt});
+    const at=params.get('access_token');const rt=params.get('refresh_token');
+    if(at&&rt){
+      const{data}=await sb.auth.setSession({access_token:at,refresh_token:rt});
       window.history.replaceState(null,'',window.location.pathname);
-      if (data?.user&&!appInitialized) { appInitialized=true; initApp(data.user); return; }
+      if(data?.user&&!appInit){appInit=true;currentPerson=localStorage.getItem('fp_person')||'mendel';logPerson=currentPerson;initApp(data.user);return;}
     }
   }
-  console.log('[boot] Checking existing session...');
-  const {data:{session}}=await sb.auth.getSession();
-  console.log('[boot] getSession result:',session?.user?.email);
-  if (session?.user&&!appInitialized) { appInitialized=true; initApp(session.user); return; }
-  document.getElementById('login-screen').style.display='flex';
-}
-sb.auth.onAuthStateChange((event,session)=>{
-  if (event==='SIGNED_OUT') {
-    appInitialized=false;
-    document.getElementById('login-screen').style.display='flex';
-    document.getElementById('app').style.display='none';
-    document.getElementById('bottom-nav').style.display='none';
+  const{data:{session}}=await sb.auth.getSession();
+  if(session?.user&&!appInit){
+    appInit=true;currentPerson=localStorage.getItem('fp_person')||'mendel';logPerson=currentPerson;
+    if(!localStorage.getItem('fp_person')){showScreen('screen-users');}else{initApp(session.user);}
+    return;
   }
-});
+  showScreen('screen-users');
+}
+sb.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT'){appInit=false;showScreen('screen-users');}});
 bootApp();
 </script>
 </body>
