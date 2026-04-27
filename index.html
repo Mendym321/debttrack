@@ -78,25 +78,31 @@ input,select{background:var(--surface);border:1px solid var(--border);border-rad
 input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,106,255,.12)}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a5a78' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.log-hero{background:linear-gradient(135deg,#1a1830,#1e1e27);border:1px solid rgba(124,106,255,.25);border-radius:var(--r);padding:20px;margin-bottom:14px;position:relative;overflow:hidden}
-.log-hero::before{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:radial-gradient(circle,rgba(124,106,255,.15),transparent 70%);pointer-events:none}
-.log-title{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);margin-bottom:14px}
+.log-type-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:12px}
+.ltt-btn{flex:1;padding:9px;border-radius:8px;border:none;background:transparent;color:var(--text2);font-family:"Outfit",sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s}
+.ltt-btn.active{background:var(--card);color:var(--text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.log-hero{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.pill-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:"Outfit",sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.pill-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.card-pill-row{display:flex;flex-wrap:wrap;gap:6px}
+.card-pill{padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:"Outfit",sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.card-pill.active{background:rgba(124,106,255,.15);border-color:var(--accent);color:var(--accent2);font-weight:600}
+.card-pill.cash.active{background:rgba(52,211,153,.1);border-color:var(--green);color:var(--green)}
 .amt-wrap{position:relative;margin-bottom:14px}
 .amt-pfx{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:22px;font-weight:700;color:var(--text3);font-family:"JetBrains Mono",monospace;pointer-events:none}
 #expense-amount{font-size:28px;font-weight:700;font-family:"JetBrains Mono",monospace;padding-left:34px;background:var(--bg);border-color:var(--border2);height:60px}
-.log-sels{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .tx-list{display:flex;flex-direction:column}
 .tx-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 .tx-item:last-child{border-bottom:none}
 .tx-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.tx-icon.charge{background:rgba(248,113,113,.1)}
-.tx-icon.payment{background:rgba(52,211,153,.1)}
+.tx-icon.charge{background:rgba(248,113,113,.1);color:var(--red)}.tx-icon.payment{background:rgba(52,211,153,.1);color:var(--green)}.tx-icon.income{background:rgba(96,165,250,.1);color:var(--blue)}.tx-icon-dot{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.6}
 .tx-body{flex:1;min-width:0}
 .tx-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tx-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .tx-cat{background:var(--surface);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500;color:var(--text2)}
 .tx-amt{font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:600;flex-shrink:0}
-.tx-amt.charge{color:var(--red)}.tx-amt.payment{color:var(--green)}
+.tx-amt.charge{color:var(--red)}.tx-amt.payment{color:var(--green)}.tx-amt.income{color:var(--blue)}
 .dc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:10px}
 .dc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
 .dc-name{font-size:16px;font-weight:700}
@@ -177,30 +183,61 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="tab-area">
 
       <div class="tab-pane active" id="pane-log">
-        <div class="log-hero">
-          <div class="log-title">Log Expense</div>
+
+        <!-- Type toggle: Expense vs Income -->
+        <div class="log-type-toggle">
+          <button class="ltt-btn active" id="ltt-expense" onclick="setLogType('expense')">Expense</button>
+          <button class="ltt-btn" id="ltt-income" onclick="setLogType('income')">Income</button>
+        </div>
+
+        <div class="log-hero" id="log-expense-panel">
           <div class="amt-wrap">
             <span class="amt-pfx">$</span>
             <input type="number" id="expense-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
           </div>
-          <div class="log-sels">
-            <select id="expense-cat">
-              <option value="groceries">Groceries</option>
-              <option value="dining">Dining Out</option>
-              <option value="transport">Transport</option>
-              <option value="shopping">Shopping</option>
-              <option value="health">Health</option>
-              <option value="kids">Kids</option>
-              <option value="utilities">Utilities</option>
-              <option value="subscriptions">Subscriptions</option>
-              <option value="entertainment">Entertainment</option>
-              <option value="other">Other</option>
-            </select>
-            <select id="expense-card"><option value="cash">💵 Cash / Debit</option></select>
+
+          <!-- Category pill selector -->
+          <div class="flabel" style="margin-bottom:8px">Category</div>
+          <div class="pill-row" id="cat-pills">
+            <button class="pill-btn active" data-val="groceries" onclick="selectCat(this)">Groceries</button>
+            <button class="pill-btn" data-val="dining" onclick="selectCat(this)">Dining</button>
+            <button class="pill-btn" data-val="transport" onclick="selectCat(this)">Transport</button>
+            <button class="pill-btn" data-val="shopping" onclick="selectCat(this)">Shopping</button>
+            <button class="pill-btn" data-val="health" onclick="selectCat(this)">Health</button>
+            <button class="pill-btn" data-val="kids" onclick="selectCat(this)">Kids</button>
+            <button class="pill-btn" data-val="utilities" onclick="selectCat(this)">Utilities</button>
+            <button class="pill-btn" data-val="subscriptions" onclick="selectCat(this)">Subscriptions</button>
+            <button class="pill-btn" data-val="entertainment" onclick="selectCat(this)">Entertainment</button>
+            <button class="pill-btn" data-val="other" onclick="selectCat(this)">Other</button>
           </div>
-          <input type="text" id="expense-note" placeholder="Note (optional)" style="margin-bottom:14px">
-          <button class="btn btn-full" onclick="logExpense()">+ Log Expense</button>
+
+          <!-- Card selector -->
+          <div class="flabel" style="margin:14px 0 8px">Paid with</div>
+          <div class="card-pill-row" id="card-pills">
+            <button class="card-pill active" data-id="cash" onclick="selectCard(this)">Cash / Debit</button>
+          </div>
+
+          <input type="text" id="expense-note" placeholder="Note (optional)" style="margin-top:14px;margin-bottom:14px">
+          <button class="btn btn-full" onclick="logExpense()">Log Expense</button>
         </div>
+
+        <div class="log-hero" id="log-income-panel" style="display:none">
+          <div class="amt-wrap">
+            <span class="amt-pfx">$</span>
+            <input type="number" id="income-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+          </div>
+          <div class="flabel" style="margin-bottom:8px">Source</div>
+          <div class="pill-row">
+            <button class="pill-btn active" data-val="salary" onclick="selectIncomeCat(this)">Salary</button>
+            <button class="pill-btn" data-val="freelance" onclick="selectIncomeCat(this)">Freelance</button>
+            <button class="pill-btn" data-val="side" onclick="selectIncomeCat(this)">Side Income</button>
+            <button class="pill-btn" data-val="transfer" onclick="selectIncomeCat(this)">Transfer</button>
+            <button class="pill-btn" data-val="other" onclick="selectIncomeCat(this)">Other</button>
+          </div>
+          <input type="text" id="income-note" placeholder="Note (optional)" style="margin-top:14px;margin-bottom:14px">
+          <button class="btn btn-full btn-green" onclick="logIncome()">Log Income</button>
+        </div>
+
         <div class="shd">Recent</div>
         <div class="card card-sm" id="recent-tx"></div>
       </div>
@@ -375,39 +412,90 @@ function renderHeader(){
 }
 
 // ── CATEGORIES ──
-const CE={groceries:'🛒',dining:'🍽️',transport:'🚗',shopping:'🛍️',health:'💊',kids:'👶',utilities:'💡',subscriptions:'📱',entertainment:'🎬',other:'📦',payment:'💳'};
+
 const CL={groceries:'Groceries',dining:'Dining',transport:'Transport',shopping:'Shopping',health:'Health',kids:'Kids',utilities:'Utilities',subscriptions:'Subscriptions',entertainment:'Entertainment',other:'Other',payment:'Payment'};
 
 // ── LOG TAB ──
 
-function populateCards(){
-  const sel=document.getElementById('expense-card');
-  sel.innerHTML='<option value="cash">💵 Cash / Debit</option>';
-  debts.forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent='💳 '+d.name;sel.appendChild(o);});
+// ── LOG TYPE / PILL SELECTORS ──
+let selectedCat='groceries';
+let selectedCard='cash';
+let selectedIncomeCat='salary';
+let logType='expense';
+
+function setLogType(t){
+  logType=t;
+  document.getElementById('ltt-expense').classList.toggle('active',t==='expense');
+  document.getElementById('ltt-income').classList.toggle('active',t==='income');
+  document.getElementById('log-expense-panel').style.display=t==='expense'?'block':'none';
+  document.getElementById('log-income-panel').style.display=t==='income'?'block':'none';
 }
+
+function selectCat(btn){
+  document.querySelectorAll('#cat-pills .pill-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedCat=btn.dataset.val;
+}
+
+function selectCard(btn){
+  document.querySelectorAll('#card-pills .card-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedCard=btn.dataset.id;
+}
+
+function selectIncomeCat(btn){
+  btn.closest('.pill-row').querySelectorAll('.pill-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedIncomeCat=btn.dataset.val;
+}
+
+function populateCards(){
+  const row=document.getElementById('card-pills');
+  if(!row)return;
+  row.innerHTML='<button class="card-pill cash'+(selectedCard==='cash'?' active':'')+'" data-id="cash" onclick="selectCard(this)">Cash / Debit</button>';
+  debts.forEach(d=>{
+    const btn=document.createElement('button');
+    btn.className='card-pill'+(selectedCard===d.id?' active':'');
+    btn.dataset.id=d.id;
+    btn.textContent=d.name;
+    btn.onclick=function(){selectCard(this);};
+    row.appendChild(btn);
+  });
+}
+
+async function logIncome(){
+  const amount=parseFloat(document.getElementById('income-amount').value);
+  const note=document.getElementById('income-note').value.trim();
+  if(!amount||amount<=0){toast('Enter an amount',true);return;}
+  const dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+  const tx=await dbAddTx({debtName:selectedIncomeCat,amount,date:dateStr,type:'income',balanceBefore:0,balanceAfter:0,category:selectedIncomeCat,note});
+  if(tx)history.unshift(tx);
+  document.getElementById('income-amount').value='';
+  document.getElementById('income-note').value='';
+  renderRecentTx();
+  toast('$'+amount.toFixed(2)+' income logged');
+}
+
 async function logExpense(){
   const amount=parseFloat(document.getElementById('expense-amount').value);
-  const cat=document.getElementById('expense-cat').value;
-  const cardId=document.getElementById('expense-card').value;
   const note=document.getElementById('expense-note').value.trim();
   if(!amount||amount<=0){toast('Enter an amount',true);return;}
   const dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
 
-  if(cardId && cardId!=='cash'){
+  if(selectedCard && selectedCard!=='cash'){
     // Real credit card — update the balance AND log spread charges
-    const d=debts.find(x=>x.id===cardId);
+    const d=debts.find(x=>x.id===selectedCard);
     if(d){
       const oldBal=d.balance;
       d.balance=parseFloat((d.balance+amount).toFixed(2));
       await dbUpdateDebt(d);
       const todayMid=new Date();todayMid.setHours(0,0,0,0);
-      await recordSpread(d.name,amount,todayMid,oldBal,d.balance,cat,note);
+      await recordSpread(d.name,amount,todayMid,oldBal,d.balance,selectedCat,note);
       await dbSnap(totalAssets(),totalLiabilities());
     }
   } else {
     // Cash / Debit — log spending only, no debt affected
-    const label = cardId==='cash' ? 'Cash/Debit' : 'General';
-    const tx=await dbAddTx({debtName:label,amount,date:dateStr,type:'charge',balanceBefore:0,balanceAfter:0,category:cat,note});
+    const tx=await dbAddTx({debtName:'Cash/Debit',amount,date:dateStr,type:'charge',balanceBefore:0,balanceAfter:0,category:selectedCat,note});
     if(tx)history.unshift(tx);
   }
   document.getElementById('expense-amount').value='';
@@ -417,12 +505,22 @@ async function logExpense(){
 }
 function renderRecentTx(){
   const el=document.getElementById('recent-tx');
-  if(!history.length){el.innerHTML='<div class="es"><div class="es-icon">📋</div><p>No transactions yet.<br>Log your first expense above.</p></div>';return;}
+  if(!history.length){el.innerHTML='<div class="es"><div class="es-icon" style="font-size:28px;opacity:.3">—</div><p>No transactions yet.<br>Log your first expense above.</p></div>';return;}
   el.innerHTML='<div class="tx-list">'+history.slice(0,40).map(tx=>{
-    const isC=tx.type==='charge';
-    const emoji=isC?(CE[tx.category]||'📦'):'💳';
-    const label=isC?(CL[tx.category]||'Other'):'Payment';
-    return '<div class="tx-item"><div class="tx-icon '+tx.type+'">'+emoji+'</div><div class="tx-body"><div class="tx-name">'+tx.debtName+(tx.note?' — '+tx.note:'')+'</div><div class="tx-meta"><span class="tx-cat">'+label+'</span><span>'+tx.date+'</span></div></div><div class="tx-amt '+tx.type+'">'+(isC?'-':'+')+' $'+tx.amount.toFixed(2)+'</div></div>';
+    const isCharge=tx.type==='charge';
+    const isIncome=tx.type==='income';
+    const isPayment=tx.type==='payment';
+    const label=isCharge?(CL[tx.category]||'Other'):isIncome?'Income':'Payment';
+    const sign=isCharge?'−':(isIncome||isPayment)?'+':'';
+    const amtClass=isCharge?'charge':isIncome?'income':'payment';
+    return '<div class="tx-item">'+
+      '<div class="tx-icon '+amtClass+'"><div class="tx-icon-dot"></div></div>'+
+      '<div class="tx-body">'+
+        '<div class="tx-name">'+tx.debtName+(tx.note?' · '+tx.note:'')+'</div>'+
+        '<div class="tx-meta"><span class="tx-cat">'+label+'</span><span>'+tx.date+'</span></div>'+
+      '</div>'+
+      '<div class="tx-amt '+amtClass+'">'+sign+'$'+tx.amount.toFixed(2)+'</div>'+
+    '</div>';
   }).join('')+'</div>';
 }
 
@@ -600,7 +698,7 @@ function renderAnalytics(){
     const d=parseLD(tx.date);if(!d||isNaN(d))return;
     const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     if(!monthly[key])monthly[key]={spent:0,paid:0};
-    if(tx.type==='charge')monthly[key].spent+=tx.amount;else monthly[key].paid+=tx.amount;
+    if(tx.type==='charge')monthly[key].spent+=tx.amount;else if(tx.type==='payment'||tx.type==='income')monthly[key].paid+=tx.amount;
   });
   const allMonths=Object.keys(monthly).sort();
   const recent6=allMonths.slice(-6);
