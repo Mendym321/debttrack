@@ -190,6 +190,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 </div>
 
+<div class="screen" id="screen-loading" style="align-items:center;justify-content:center;gap:16px">
+  <div class="spin" style="width:36px;height:36px;border-width:3px"></div>
+  <div style="font-size:14px;color:var(--text2)" id="loading-msg">Loading your data...</div>
+</div>
+
 <div class="screen" id="screen-login">
   <div class="login-box">
     <h1>Sign in</h1>
@@ -414,12 +419,16 @@ document.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.tar
 function selectUser(person){
   currentPerson=person;logPerson=person;analyticsPerson=person;
   localStorage.setItem('fp_person',person);
-  // Show login immediately — don't make user wait for async session check
-  // If already signed in, initApp will redirect past the login screen
-  showScreen('screen-login');
+  // Show loading on the tapped card immediately
+  const card=document.querySelector('.user-card.'+person);
+  if(card){card.innerHTML='<div class="spin" style="margin:20px auto 12px"></div><div style="font-size:14px;color:var(--text2)">Connecting...</div>';}
   sb.auth.getSession().then(({data:{session}})=>{
-    if(session?.user && !appInit){appInit=true;initApp(session.user);}
-  });
+    if(session?.user){
+      if(!appInit){appInit=true;initApp(session.user);}
+    } else {
+      showScreen('screen-login');
+    }
+  }).catch(()=>showScreen('screen-login'));
 }
 function switchUser(){showScreen('screen-users');}
 function renderHeader(){
@@ -852,14 +861,23 @@ function toast(msg,isError=false){
 
 // ── INIT ──
 async function initApp(user){
-  currentUser=user;showScreen('screen-app');renderHeader();
+  currentUser=user;
+  // Show loading screen while fetching data
+  showScreen('screen-loading');
+  document.getElementById('loading-msg').textContent='Loading your data...';
+  renderHeader();
   ['mendel','rivka'].forEach(p=>document.getElementById('lp-'+p).classList.toggle('active',p===currentPerson));
   setAP(currentPerson);
   document.getElementById('recent-tx').innerHTML='<div class="spin"></div>';
   try{
     [debts,history,assets]=await Promise.all([dbLoadDebts(),dbLoadHistory(),dbLoadAssets()]);
     populateCards();renderRecentTx();await dbSnap(totalAssets(),totalLiabilities());
-  }catch(err){console.error('initApp error:',err);toast('Error loading data',true);}
+    showScreen('screen-app');
+  }catch(err){
+    console.error('initApp error:',err);
+    showScreen('screen-app');
+    toast('Error loading data',true);
+  }
 }
 
 let appInit=false;
