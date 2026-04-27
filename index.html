@@ -18,7 +18,6 @@ html{height:100%;overflow:hidden}
 body{height:100%;background:var(--bg);color:var(--text);font-family:"Outfit",sans-serif;overflow:hidden;position:fixed;width:100%}
 .screen{position:fixed;inset:0;display:none;flex-direction:column;z-index:10;background:var(--bg)}
 .screen.active{display:flex}
-#screen-users{align-items:center;justify-content:center}
 .user-select-wrap{width:100%;max-width:400px;padding:32px 24px}
 .app-wordmark{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--text3);margin-bottom:52px;text-align:center}
 .user-select-title{font-size:30px;font-weight:700;margin-bottom:8px;text-align:center}
@@ -32,9 +31,6 @@ body{height:100%;background:var(--bg);color:var(--text);font-family:"Outfit",san
 .user-card.mendel:hover{border-color:var(--accent);box-shadow:0 8px 32px rgba(124,106,255,.2)}
 .user-card.rivka:hover{border-color:var(--green);box-shadow:0 8px 32px rgba(52,211,153,.2)}
 .user-card:hover::before{opacity:1}
-.uavatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;margin:0 auto 14px;position:relative;z-index:1}
-.user-card.mendel .uavatar{background:linear-gradient(135deg,#7c6aff,#a594ff);color:#fff}
-.user-card.rivka .uavatar{background:linear-gradient(135deg,#34d399,#6ee7b7);color:#065f46}
 .user-card-name{font-size:17px;font-weight:700;position:relative;z-index:1}
 .user-card-sub{font-size:12px;color:var(--text2);margin-top:4px;position:relative;z-index:1}
 .login-box{width:100%;max-width:380px;padding:24px;text-align:center}
@@ -45,9 +41,6 @@ body{height:100%;background:var(--bg);color:var(--text);font-family:"Outfit",san
 .app-shell{display:flex;flex-direction:column;height:100%;overflow:hidden}
 .app-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0;flex-shrink:0}
 .header-left{display:flex;align-items:center;gap:10px}
-.uav-sm{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;cursor:pointer;flex-shrink:0}
-.uav-sm.mendel{background:linear-gradient(135deg,#7c6aff,#a594ff);color:#fff}
-.uav-sm.rivka{background:linear-gradient(135deg,#34d399,#6ee7b7);color:#065f46}
 .hdr-name{font-size:15px;font-weight:600}
 .hdr-date{font-size:11px;color:var(--text3);font-family:"JetBrains Mono",monospace}
 .tab-area{flex:1;overflow:hidden;position:relative}
@@ -92,11 +85,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .amt-pfx{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:22px;font-weight:700;color:var(--text3);font-family:"JetBrains Mono",monospace;pointer-events:none}
 #expense-amount{font-size:28px;font-weight:700;font-family:"JetBrains Mono",monospace;padding-left:34px;background:var(--bg);border-color:var(--border2);height:60px}
 .log-sels{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.ptoggle{display:flex;gap:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:14px}
-.popt{flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--text2);font-family:"Outfit",sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center}
-.popt.active{background:var(--card);color:var(--text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.popt.mendel.active{color:var(--accent2)}
-.popt.rivka.active{color:var(--green)}
 .tx-list{display:flex;flex-direction:column}
 .tx-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 .tx-item:last-child{border-bottom:none}
@@ -109,8 +97,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .tx-cat{background:var(--surface);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500;color:var(--text2)}
 .tx-amt{font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:600;flex-shrink:0}
 .tx-amt.charge{color:var(--red)}.tx-amt.payment{color:var(--green)}
-.pdot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
-.pdot.mendel{background:var(--accent)}.pdot.rivka{background:var(--green)}
 .dc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:10px}
 .dc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
 .dc-name{font-size:16px;font-weight:700}
@@ -169,26 +155,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div class="screen active" id="screen-users">
-  <div class="user-select-wrap">
-    <div class="app-wordmark">Finance Tracker</div>
-    <div class="user-select-title">Who's tracking?</div>
-    <div class="user-select-sub">Select your profile</div>
-    <div class="user-cards">
-      <div class="user-card mendel" onclick="selectUser('mendel')">
-        <div class="uavatar">M</div>
-        <div class="user-card-name">Mendel</div>
-        <div class="user-card-sub">Tap to continue</div>
-      </div>
-      <div class="user-card rivka" onclick="selectUser('rivka')">
-        <div class="uavatar">R</div>
-        <div class="user-card-name">Rivka</div>
-        <div class="user-card-sub">Tap to continue</div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="screen" id="screen-loading" style="align-items:center;justify-content:center;gap:16px">
   <div class="spin" style="width:36px;height:36px;border-width:3px"></div>
   <div style="font-size:14px;color:var(--text2)" id="loading-msg">Loading your data...</div>
@@ -196,7 +162,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 </div>
 
-<div class="screen" id="screen-app">
+<div class="screen active" id="screen-app">
   <div class="app-shell">
     <div class="app-header">
       <div class="header-left">
@@ -213,10 +179,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="tab-pane active" id="pane-log">
         <div class="log-hero">
           <div class="log-title">Log Expense</div>
-          <div class="ptoggle">
-            <button class="popt mendel active" id="lp-mendel" onclick="setLP('mendel')">Mendel</button>
-            <button class="popt rivka" id="lp-rivka" onclick="setLP('rivka')">Rivka</button>
-          </div>
           <div class="amt-wrap">
             <span class="amt-pfx">$</span>
             <input type="number" id="expense-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
@@ -234,7 +196,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               <option value="entertainment">Entertainment</option>
               <option value="other">Other</option>
             </select>
-            <select id="expense-card"><option value="">No card</option></select>
+            <select id="expense-card"><option value="cash">💵 Cash / Debit</option></select>
           </div>
           <input type="text" id="expense-note" placeholder="Note (optional)" style="margin-bottom:14px">
           <button class="btn btn-full" onclick="logExpense()">+ Log Expense</button>
@@ -251,11 +213,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
 
       <div class="tab-pane" id="pane-analytics">
-        <div class="ptoggle" style="margin-bottom:16px">
-          <button class="popt mendel active" id="ap-mendel" onclick="setAP('mendel')">Mendel</button>
-          <button class="popt rivka" id="ap-rivka" onclick="setAP('rivka')">Rivka</button>
-          <button class="popt" id="ap-both" onclick="setAP('both')" style="flex:1.2">Both</button>
-        </div>
         <div id="analytics-out"></div>
       </div>
 
@@ -348,9 +305,8 @@ const SB_URL='https://zsaokuspdzooaihqpuod.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzYW9rdXNwZHpvb2FpaHFwdW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjM1MzgsImV4cCI6MjA4NzA5OTUzOH0.TzKaUYb-32QZ-vqTmHeK5ZTin-z_dfmUJYxRsVIsElc';
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
-// No auth — fixed user IDs per person
-const PERSON_IDS={mendel:'user-mendel-fixed',rivka:'user-rivka-fixed'};
-function getUserId(){return PERSON_IDS[currentPerson]||PERSON_IDS.mendel;}
+const USER_ID='user-finance-app';
+function getUserId(){return USER_ID;}
 
 // ── DB ──
 async function dbLoadDebts(){
@@ -368,10 +324,10 @@ async function dbDeleteDebt(id){await sb.from('debts').delete().eq('id',id);}
 async function dbLoadHistory(){
   const{data,error}=await sb.from('payments').select('*').order('created_at',{ascending:false}).limit(300);
   if(error){console.error(error);return[];}
-  return data.map(r=>({id:r.id,debtName:r.debt_name,amount:parseFloat(r.amount)||0,date:r.date,type:r.type||'payment',balanceBefore:parseFloat(r.balance_before)||0,balanceAfter:parseFloat(r.balance_after)||0,category:r.category||'other',person:r.person||'mendel',note:r.note||''}));
+  return data.map(r=>({id:r.id,debtName:r.debt_name,amount:parseFloat(r.amount)||0,date:r.date,type:r.type||'payment',balanceBefore:parseFloat(r.balance_before)||0,balanceAfter:parseFloat(r.balance_after)||0,category:r.category||'other',note:r.note||''}));
 }
 async function dbAddTx(tx){
-  const{data,error}=await sb.from('payments').insert({user_id:getUserId(),debt_name:tx.debtName,amount:tx.amount,date:tx.date,type:tx.type,balance_before:tx.balanceBefore||0,balance_after:tx.balanceAfter||0,category:tx.category||'other',person:tx.person||'mendel',note:tx.note||''}).select().single();
+  const{data,error}=await sb.from('payments').insert({user_id:getUserId(),debt_name:tx.debtName,amount:tx.amount,date:tx.date,type:tx.type,balance_before:tx.balanceBefore||0,balance_after:tx.balanceAfter||0,category:tx.category||'other',note:tx.note||''}).select().single();
   if(error){console.error(error);return null;}
   return{...tx,id:data.id};
 }
@@ -384,8 +340,6 @@ async function dbLoadAssets(){const{data,error}=await sb.from('assets').select('
 
 // ── STATE ──
 let debts=[],history=[],assets=[];
-let currentPerson=localStorage.getItem('fp_person')||'mendel';
-let logPerson=currentPerson,analyticsPerson=currentPerson;
 let updatingBalId=null,payingId=null,editingId=null;
 let planStrategy='avalanche';
 
@@ -414,17 +368,9 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.target.classList.remove('open');});
 
 // ── USER ──
-function selectUser(person){
-  currentPerson=person;logPerson=person;analyticsPerson=person;
-  localStorage.setItem('fp_person',person);
-  initApp();
-}
-function switchUser(){showScreen('screen-users');}
+
+
 function renderHeader(){
-  const av=document.getElementById('hdr-av');
-  av.className='uav-sm '+currentPerson;
-  av.textContent=currentPerson==='mendel'?'M':'R';
-  document.getElementById('hdr-name').textContent=currentPerson.charAt(0).toUpperCase()+currentPerson.slice(1);
   document.getElementById('hdr-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 }
 
@@ -433,11 +379,11 @@ const CE={groceries:'🛒',dining:'🍽️',transport:'🚗',shopping:'🛍️',
 const CL={groceries:'Groceries',dining:'Dining',transport:'Transport',shopping:'Shopping',health:'Health',kids:'Kids',utilities:'Utilities',subscriptions:'Subscriptions',entertainment:'Entertainment',other:'Other',payment:'Payment'};
 
 // ── LOG TAB ──
-function setLP(p){logPerson=p;['mendel','rivka'].forEach(x=>document.getElementById('lp-'+x).classList.toggle('active',x===p));}
+
 function populateCards(){
   const sel=document.getElementById('expense-card');
-  sel.innerHTML='<option value="">No card</option>';
-  debts.forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent=d.name;sel.appendChild(o);});
+  sel.innerHTML='<option value="cash">💵 Cash / Debit</option>';
+  debts.forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent='💳 '+d.name;sel.appendChild(o);});
 }
 async function logExpense(){
   const amount=parseFloat(document.getElementById('expense-amount').value);
@@ -446,18 +392,22 @@ async function logExpense(){
   const note=document.getElementById('expense-note').value.trim();
   if(!amount||amount<=0){toast('Enter an amount',true);return;}
   const dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
-  if(cardId){
+
+  if(cardId && cardId!=='cash'){
+    // Real credit card — update the balance AND log spread charges
     const d=debts.find(x=>x.id===cardId);
     if(d){
       const oldBal=d.balance;
       d.balance=parseFloat((d.balance+amount).toFixed(2));
       await dbUpdateDebt(d);
       const todayMid=new Date();todayMid.setHours(0,0,0,0);
-      await recordSpread(d.name,amount,todayMid,oldBal,d.balance,cat,logPerson,note);
+      await recordSpread(d.name,amount,todayMid,oldBal,d.balance,cat,note);
       await dbSnap(totalAssets(),totalLiabilities());
     }
   } else {
-    const tx=await dbAddTx({debtName:'General',amount,date:dateStr,type:'charge',balanceBefore:0,balanceAfter:0,category:cat,person:logPerson,note});
+    // Cash / Debit — log spending only, no debt affected
+    const label = cardId==='cash' ? 'Cash/Debit' : 'General';
+    const tx=await dbAddTx({debtName:label,amount,date:dateStr,type:'charge',balanceBefore:0,balanceAfter:0,category:cat,note});
     if(tx)history.unshift(tx);
   }
   document.getElementById('expense-amount').value='';
@@ -472,7 +422,7 @@ function renderRecentTx(){
     const isC=tx.type==='charge';
     const emoji=isC?(CE[tx.category]||'📦'):'💳';
     const label=isC?(CL[tx.category]||'Other'):'Payment';
-    return '<div class="tx-item"><div class="tx-icon '+tx.type+'">'+emoji+'</div><div class="tx-body"><div class="tx-name">'+tx.debtName+(tx.note?' — '+tx.note:'')+'</div><div class="tx-meta"><span class="pdot '+(tx.person||'mendel')+'"></span><span class="tx-cat">'+label+'</span><span>'+tx.date+'</span></div></div><div class="tx-amt '+tx.type+'">'+(isC?'-':'+')+' $'+tx.amount.toFixed(2)+'</div></div>';
+    return '<div class="tx-item"><div class="tx-icon '+tx.type+'">'+emoji+'</div><div class="tx-body"><div class="tx-name">'+tx.debtName+(tx.note?' — '+tx.note:'')+'</div><div class="tx-meta"><span class="tx-cat">'+label+'</span><span>'+tx.date+'</span></div></div><div class="tx-amt '+tx.type+'">'+(isC?'-':'+')+' $'+tx.amount.toFixed(2)+'</div></div>';
   }).join('')+'</div>';
 }
 
@@ -535,11 +485,11 @@ async function confirmBalUpdate(){
   d.balance=val;
   if(diff<0){
     const paid=Math.abs(diff);d.paid+=paid;
-    const tx=await dbAddTx({debtName:d.name,amount:paid,date:dateStr,type:'payment',balanceBefore:oldBal,balanceAfter:val,category:'payment',person:currentPerson,note:''});
+    const tx=await dbAddTx({debtName:d.name,amount:paid,date:dateStr,type:'payment',balanceBefore:oldBal,balanceAfter:val,category:'payment',note:''});
     if(tx)history.unshift(tx);
   } else if(diff>0){
     const tm=new Date();tm.setHours(0,0,0,0);
-    await recordSpread(d.name,diff,tm,oldBal,val,'other',currentPerson,'');
+    await recordSpread(d.name,diff,tm,oldBal,val,'other','');
   }
   await dbUpdateDebt(d);await dbSnap(totalAssets(),totalLiabilities());
   closeModal('modal-balance');renderDebts();renderRecentTx();
@@ -562,7 +512,7 @@ async function confirmPayment(){
   d.balance=Math.max(0,d.balance-actual);d.paid+=actual;
   const dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
   await dbUpdateDebt(d);
-  const tx=await dbAddTx({debtName:d.name,amount:actual,date:dateStr,type:'payment',balanceBefore:oldBal,balanceAfter:d.balance,category:'payment',person:currentPerson,note:''});
+  const tx=await dbAddTx({debtName:d.name,amount:actual,date:dateStr,type:'payment',balanceBefore:oldBal,balanceAfter:d.balance,category:'payment',note:''});
   if(tx)history.unshift(tx);
   await dbSnap(totalAssets(),totalLiabilities());
   closeModal('modal-payment');renderDebts();renderRecentTx();
@@ -609,7 +559,7 @@ async function delDebt(id){
 // We spread the total proportionally across calendar months since the last
 // recorded transaction for that card — so the monthly analytics picture
 // reflects reality rather than one big spike on update day.
-async function recordSpread(debtName,totalSpent,todayMid,balanceBefore,balanceAfter,category,person,note){
+async function recordSpread(debtName,totalSpent,todayMid,balanceBefore,balanceAfter,category,note){
   if(totalSpent<=0)return;
   const lastTx=history.find(h=>h.debtName===debtName&&h.type==='charge');
   let winStart;
@@ -631,20 +581,16 @@ async function recordSpread(debtName,totalSpent,todayMid,balanceBefore,balanceAf
     const amount=isLast?parseFloat(remaining.toFixed(2)):parseFloat((totalSpent*bucket.days/totalDays).toFixed(2));
     remaining-=amount;if(amount<=0)continue;
     const dateStr=bucket.lastDay.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
-    const tx=await dbAddTx({debtName,amount,date:dateStr,type:'charge',balanceBefore,balanceAfter,category,person,note});
+    const tx=await dbAddTx({debtName,amount,date:dateStr,type:'charge',balanceBefore,balanceAfter,category,note});
     if(tx)history.unshift(tx);
   }
 }
 
 // ── ANALYTICS ──
-function setAP(p){
-  analyticsPerson=p;
-  ['mendel','rivka','both'].forEach(x=>{const b=document.getElementById('ap-'+x);if(b)b.classList.toggle('active',x===p);});
-  renderAnalytics();
-}
+
 function renderAnalytics(){
   const el=document.getElementById('analytics-out');
-  const filtered=analyticsPerson==='both'?history:history.filter(h=>(h.person||'mendel')===analyticsPerson);
+  const filtered=history;
   const charges=filtered.filter(h=>h.type==='charge');
   if(!filtered.length){el.innerHTML='<div class="es"><div class="es-icon">📊</div><p>No data yet.<br>Log expenses to see analytics.</p></div>';return;}
   const now=new Date();
@@ -852,8 +798,6 @@ function toast(msg,isError=false){
 async function initApp(){
   showScreen('screen-loading');
   renderHeader();
-  ['mendel','rivka'].forEach(p=>document.getElementById('lp-'+p).classList.toggle('active',p===currentPerson));
-  setAP(currentPerson);
   document.getElementById('recent-tx').innerHTML='<div class="spin"></div>';
   try{
     [debts,history,assets]=await Promise.all([dbLoadDebts(),dbLoadHistory(),dbLoadAssets()]);
@@ -867,14 +811,8 @@ async function initApp(){
   }
 }
 
-// On load — if person already chosen, go straight to app
-const savedPerson=localStorage.getItem('fp_person');
-if(savedPerson){
-  currentPerson=savedPerson;logPerson=savedPerson;analyticsPerson=savedPerson;
-  initApp();
-} else {
-  showScreen('screen-users');
-}
+// Boot straight into app
+initApp();
 </script>
 </body>
 </html>
