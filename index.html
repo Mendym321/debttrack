@@ -37,7 +37,6 @@ body{height:100%;background:var(--bg);color:var(--text);font-family:"Outfit",san
 .user-card.rivka .uavatar{background:linear-gradient(135deg,#34d399,#6ee7b7);color:#065f46}
 .user-card-name{font-size:17px;font-weight:700;position:relative;z-index:1}
 .user-card-sub{font-size:12px;color:var(--text2);margin-top:4px;position:relative;z-index:1}
-#screen-login{background:var(--bg);align-items:center;justify-content:center}
 .login-box{width:100%;max-width:380px;padding:24px;text-align:center}
 .login-box h1{font-size:26px;font-weight:700;margin-bottom:6px}
 .login-box p{color:var(--text2);font-size:14px;margin-bottom:32px;line-height:1.6}
@@ -195,15 +194,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div style="font-size:14px;color:var(--text2)" id="loading-msg">Loading your data...</div>
 </div>
 
-<div class="screen" id="screen-login">
-  <div class="login-box">
-    <h1>Sign in</h1>
-    <p>Connect your account to sync across devices</p>
-    <button class="btn-google" onclick="signInWithGoogle()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.8l6.2 5.2C41 35.4 44 30.1 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
-      Continue with Google
-    </button>
-  </div>
 </div>
 
 <div class="screen" id="screen-app">
@@ -216,7 +206,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="hdr-date" id="hdr-date"></div>
         </div>
       </div>
-      <button class="btn btn-sm btn-ghost" onclick="if(confirm('Sign out?'))signOut()">Sign out</button>
+      <button class="btn btn-sm btn-ghost" onclick="switchUser()">Switch</button>
     </div>
     <div class="tab-area">
 
@@ -357,10 +347,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 const SB_URL='https://zsaokuspdzooaihqpuod.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzYW9rdXNwZHpvb2FpaHFwdW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjM1MzgsImV4cCI6MjA4NzA5OTUzOH0.TzKaUYb-32QZ-vqTmHeK5ZTin-z_dfmUJYxRsVIsElc';
 const sb=supabase.createClient(SB_URL,SB_KEY);
-let currentUser=null;
 
-async function signInWithGoogle(){await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});}
-async function signOut(){await sb.auth.signOut();currentUser=null;appInit=false;showScreen('screen-users');}
+// No auth — fixed user IDs per person
+const PERSON_IDS={mendel:'user-mendel-fixed',rivka:'user-rivka-fixed'};
+function getUserId(){return PERSON_IDS[currentPerson]||PERSON_IDS.mendel;}
 
 // ── DB ──
 async function dbLoadDebts(){
@@ -369,7 +359,7 @@ async function dbLoadDebts(){
   return data.map(r=>({id:r.id,name:r.name,type:r.type,originalBalance:r.original_balance,balance:parseFloat(r.balance)||0,rate:parseFloat(r.rate)||0,min:parseFloat(r.min)||0,due:r.due,paid:parseFloat(r.paid)||0}));
 }
 async function dbAddDebt(d){
-  const{data,error}=await sb.from('debts').insert({user_id:currentUser.id,name:d.name,type:d.type,original_balance:d.originalBalance,balance:d.balance,rate:d.rate,min:d.min,due:d.due,paid:0}).select().single();
+  const{data,error}=await sb.from('debts').insert({user_id:getUserId(),name:d.name,type:d.type,original_balance:d.originalBalance,balance:d.balance,rate:d.rate,min:d.min,due:d.due,paid:0}).select().single();
   if(error){toast('Error saving',true);return null;}
   return{...d,id:data.id};
 }
@@ -381,15 +371,15 @@ async function dbLoadHistory(){
   return data.map(r=>({id:r.id,debtName:r.debt_name,amount:parseFloat(r.amount)||0,date:r.date,type:r.type||'payment',balanceBefore:parseFloat(r.balance_before)||0,balanceAfter:parseFloat(r.balance_after)||0,category:r.category||'other',person:r.person||'mendel',note:r.note||''}));
 }
 async function dbAddTx(tx){
-  const{data,error}=await sb.from('payments').insert({user_id:currentUser.id,debt_name:tx.debtName,amount:tx.amount,date:tx.date,type:tx.type,balance_before:tx.balanceBefore||0,balance_after:tx.balanceAfter||0,category:tx.category||'other',person:tx.person||'mendel',note:tx.note||''}).select().single();
+  const{data,error}=await sb.from('payments').insert({user_id:getUserId(),debt_name:tx.debtName,amount:tx.amount,date:tx.date,type:tx.type,balance_before:tx.balanceBefore||0,balance_after:tx.balanceAfter||0,category:tx.category||'other',person:tx.person||'mendel',note:tx.note||''}).select().single();
   if(error){console.error(error);return null;}
   return{...tx,id:data.id};
 }
 async function dbSnap(at,lt){
   const today=new Date().toISOString().split('T')[0];
-  await sb.from('networth_snapshots').upsert({user_id:currentUser.id,assets_total:at,liabilities_total:lt,net_worth:at-lt,snapshot_date:today},{onConflict:'user_id,snapshot_date'});
+  await sb.from('networth_snapshots').upsert({user_id:getUserId(),assets_total:at,liabilities_total:lt,net_worth:at-lt,snapshot_date:today},{onConflict:'user_id,snapshot_date'});
 }
-async function dbLoadBudget(){const{data}=await sb.from('budgets').select('data').eq('user_id',currentUser.id).single();return data?.data||{};}
+async function dbLoadBudget(){try{const{data}=await sb.from('budgets').select('data').eq('user_id',getUserId()).maybeSingle();return data?.data||{};}catch(e){return {};}}
 async function dbLoadAssets(){const{data,error}=await sb.from('assets').select('*').order('created_at');if(error)return[];return data.map(r=>({id:r.id,name:r.name,category:r.category,value:parseFloat(r.value)||0}));}
 
 // ── STATE ──
@@ -427,16 +417,7 @@ document.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.tar
 function selectUser(person){
   currentPerson=person;logPerson=person;analyticsPerson=person;
   localStorage.setItem('fp_person',person);
-  // Show loading on the tapped card immediately
-  const card=document.querySelector('.user-card.'+person);
-  if(card){card.innerHTML='<div class="spin" style="margin:20px auto 12px"></div><div style="font-size:14px;color:var(--text2)">Connecting...</div>';}
-  sb.auth.getSession().then(({data:{session}})=>{
-    if(session?.user){
-      if(!appInit){appInit=true;initApp(session.user);}
-    } else {
-      showScreen('screen-login');
-    }
-  }).catch(()=>showScreen('screen-login'));
+  initApp();
 }
 function switchUser(){showScreen('screen-users');}
 function renderHeader(){
@@ -868,54 +849,32 @@ function toast(msg,isError=false){
 }
 
 // ── INIT ──
-async function initApp(user){
-  currentUser=user;
-  // Show loading screen while fetching data
+async function initApp(){
   showScreen('screen-loading');
-  document.getElementById('loading-msg').textContent='Loading your data...';
   renderHeader();
   ['mendel','rivka'].forEach(p=>document.getElementById('lp-'+p).classList.toggle('active',p===currentPerson));
   setAP(currentPerson);
   document.getElementById('recent-tx').innerHTML='<div class="spin"></div>';
   try{
     [debts,history,assets]=await Promise.all([dbLoadDebts(),dbLoadHistory(),dbLoadAssets()]);
-    populateCards();renderRecentTx();await dbSnap(totalAssets(),totalLiabilities());
+    populateCards();renderRecentTx();
     showScreen('screen-app');
+    dbSnap(totalAssets(),totalLiabilities());
   }catch(err){
     console.error('initApp error:',err);
+    toast('Error loading data — check connection',true);
     showScreen('screen-app');
-    toast('Error loading data',true);
   }
 }
 
-let appInit=false;
-async function bootApp(){
-  const hash=window.location.hash;
-  if(hash.includes('access_token')){
-    const params=new URLSearchParams(hash.substring(1));
-    const at=params.get('access_token');const rt=params.get('refresh_token');
-    if(at&&rt){
-      const{data}=await sb.auth.setSession({access_token:at,refresh_token:rt});
-      window.history.replaceState(null,'',window.location.pathname);
-      if(data?.user&&!appInit){appInit=true;currentPerson=localStorage.getItem('fp_person')||'mendel';logPerson=currentPerson;initApp(data.user);return;}
-    }
-  }
-  const{data:{session}}=await sb.auth.getSession();
-  if(session?.user&&!appInit){
-    appInit=true;currentPerson=localStorage.getItem('fp_person')||'mendel';logPerson=currentPerson;
-    if(localStorage.getItem('fp_person')){
-      // Already have a person saved — go straight to the app
-      initApp(session.user);
-    } else {
-      // First time — let them pick a person
-      showScreen('screen-users');
-    }
-    return;
-  }
+// On load — if person already chosen, go straight to app
+const savedPerson=localStorage.getItem('fp_person');
+if(savedPerson){
+  currentPerson=savedPerson;logPerson=savedPerson;analyticsPerson=savedPerson;
+  initApp();
+} else {
   showScreen('screen-users');
 }
-sb.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT'){appInit=false;showScreen('screen-users');}});
-bootApp();
 </script>
 </body>
 </html>
