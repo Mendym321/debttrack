@@ -414,8 +414,11 @@ document.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.tar
 function selectUser(person){
   currentPerson=person;logPerson=person;analyticsPerson=person;
   localStorage.setItem('fp_person',person);
+  // Show login immediately — don't make user wait for async session check
+  // If already signed in, initApp will redirect past the login screen
+  showScreen('screen-login');
   sb.auth.getSession().then(({data:{session}})=>{
-    if(session?.user)initApp(session.user);else showScreen('screen-login');
+    if(session?.user && !appInit){appInit=true;initApp(session.user);}
   });
 }
 function switchUser(){showScreen('screen-users');}
@@ -874,7 +877,13 @@ async function bootApp(){
   const{data:{session}}=await sb.auth.getSession();
   if(session?.user&&!appInit){
     appInit=true;currentPerson=localStorage.getItem('fp_person')||'mendel';logPerson=currentPerson;
-    if(!localStorage.getItem('fp_person')){showScreen('screen-users');}else{initApp(session.user);}
+    if(localStorage.getItem('fp_person')){
+      // Already have a person saved — go straight to the app
+      initApp(session.user);
+    } else {
+      // First time — let them pick a person
+      showScreen('screen-users');
+    }
     return;
   }
   showScreen('screen-users');
