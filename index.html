@@ -339,8 +339,24 @@ async function dbLoadHistory(){
   return data.map(r=>({id:r.id,debtName:r.debt_name,amount:parseFloat(r.amount)||0,date:r.date,type:r.type||'payment',balanceBefore:parseFloat(r.balance_before)||0,balanceAfter:parseFloat(r.balance_after)||0,category:r.category||'other',note:r.note||''}));
 }
 async function dbAddTx(tx){
-  const{data,error}=await sb.from('payments').insert({user_id:USER_ID,debt_name:tx.debtName,amount:tx.amount,date:tx.date,type:tx.type,balance_before:tx.balanceBefore||0,balance_after:tx.balanceAfter||0,category:tx.category||'other',note:tx.note||''}).select().single();
-  if(error){console.error(error);return null;}
+  const payload={
+    user_id:USER_ID,
+    debt_name:tx.debtName,
+    amount:tx.amount,
+    date:tx.date,
+    type:tx.type,
+    balance_before:tx.balanceBefore||0,
+    balance_after:tx.balanceAfter||0,
+    category:tx.category||'other',
+    note:tx.note||'',
+    person:'shared'  // satisfy NOT NULL if column exists
+  };
+  const{data,error}=await sb.from('payments').insert(payload).select().single();
+  if(error){
+    console.error('dbAddTx error:',error.message,error.details,error.hint);
+    toast('DB error: '+error.message,true);
+    return null;
+  }
   return{...tx,id:data.id};
 }
 
