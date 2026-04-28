@@ -86,7 +86,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .tx-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .tx-cat{background:var(--surface);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500;color:var(--text2)}
 .tx-amt{font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:600;flex-shrink:0}
+.tx-icon-emoji{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--surface)}
 .tx-amt.charge{color:var(--red)}.tx-amt.payment{color:var(--green)}.tx-amt.income{color:var(--blue)}
+.tx-del{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:4px 6px;border-radius:6px;line-height:1;transition:all .15s;flex-shrink:0}
+.tx-del:hover{background:rgba(248,113,113,.15);color:var(--red)}
 .dc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:10px}
 .dc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
 .dc-name{font-size:16px;font-weight:700}
@@ -431,7 +434,7 @@ async function logIncome(){
   document.getElementById('income-amount').value='';
   document.getElementById('income-note').value='';
   renderRecentTx();
-  if(document.getElementById('pane-analytics').classList.contains('active'))renderAnalytics();
+  renderAnalytics();
   toast('$'+amount.toFixed(2)+' income logged');
 }
 
@@ -442,43 +445,88 @@ async function logExpense(){
   const dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
 
   if(selectedCard && selectedCard!=='cash'){
-    // Real credit card — update the balance AND log spread charges
+    // Credit card: add to balance + log one direct transaction for today
     const d=debts.find(x=>x.id===selectedCard);
-    if(d){
-      const oldBal=d.balance;
-      d.balance=parseFloat((d.balance+amount).toFixed(2));
-      await dbUpdateDebt(d);
-      const todayMid=new Date();todayMid.setHours(0,0,0,0);
-      await recordSpread(d.name,amount,todayMid,oldBal,d.balance,selectedCat,note);
-    }
+    if(!d){toast('Card not found',true);return;}
+    const oldBal=d.balance;
+    d.balance=parseFloat((d.balance+amount).toFixed(2));
+    // Save to DB first
+    const tx=await dbAddTx({
+      debtName:d.name, amount, date:dateStr, type:'charge',
+      balanceBefore:oldBal, balanceAfter:d.balance,
+      category:selectedCat, note
+    });
+    if(!tx){toast('Error saving — check connection',true);d.balance=oldBal;return;}
+    await dbUpdateDebt(d);
+    history.unshift(tx);
   } else {
-    // Cash / Debit — log spending only, no debt affected
-    const tx=await dbAddTx({debtName:'Cash/Debit',amount,date:dateStr,type:'charge',balanceBefore:0,balanceAfter:0,category:selectedCat,note});
-    if(tx)history.unshift(tx);
+    // Cash/Debit: log only for spending habits, no card balance affected
+    const tx=await dbAddTx({
+      debtName:'Cash/Debit', amount, date:dateStr, type:'charge',
+      balanceBefore:0, balanceAfter:0, category:selectedCat, note
+    });
+    if(!tx){toast('Error saving — check connection',true);return;}
+    history.unshift(tx);
   }
+
   document.getElementById('expense-amount').value='';
   document.getElementById('expense-note').value='';
-  renderRecentTx();renderDebts();
-  if(document.getElementById('pane-analytics').classList.contains('active'))renderAnalytics();
+  renderRecentTx();
+  renderDebts();
+  renderAnalytics();
   toast('$'+amount.toFixed(2)+' logged');
+}
+
+function deleteTxFromBtn(btn){
+  const id=btn.dataset.id;
+  const debtName=btn.dataset.name;
+  const amount=parseFloat(btn.dataset.amt);
+  const type=btn.dataset.type;
+  deleteTx(id,debtName,amount,type);
+}
+async function deleteTx(id,debtName,amount,type){
+  if(!confirm('Delete this transaction?'))return;
+  // If it was a credit card charge, reverse the balance
+  if(type==='charge' && debtName!=='Cash/Debit'){
+    const d=debts.find(x=>x.name===debtName);
+    if(d){
+      d.balance=Math.max(0,parseFloat((d.balance-amount).toFixed(2)));
+      await dbUpdateDebt(d);
+    }
+  }
+  await sb.from('payments').delete().eq('id',id);
+  history=history.filter(h=>h.id!==id);
+  renderRecentTx();
+  renderDebts();
+  renderAnalytics();
+  toast('Transaction deleted');
 }
 function renderRecentTx(){
   const el=document.getElementById('recent-tx');
   if(!history.length){el.innerHTML='<div class="es"><div class="es-icon" style="font-size:28px;opacity:.3">—</div><p>No transactions yet.<br>Log your first expense above.</p></div>';return;}
-  el.innerHTML='<div class="tx-list">'+history.slice(0,40).map(tx=>{
+  el.innerHTML='<div class="tx-list">'+history.slice(0,60).map(tx=>{
     const isCharge=tx.type==='charge';
     const isIncome=tx.type==='income';
-    const isPayment=tx.type==='payment';
-    const label=isCharge?(CL[tx.category]||'Other'):isIncome?'Income':'Payment';
-    const sign=isCharge?'−':(isIncome||isPayment)?'+':'';
+    const emoji=isCharge?(CE[tx.category]||'📦'):isIncome?'💰':'💳';
+    const label=isCharge?(CL[tx.category]||'Other'):isIncome?(CL[tx.category]||'Income'):'Payment';
+    const sign=isCharge?'−':'+';
     const amtClass=isCharge?'charge':isIncome?'income':'payment';
-    return '<div class="tx-item">'+
-      '<div class="tx-icon '+amtClass+'"><div class="tx-icon-dot"></div></div>'+
+    // Only allow delete on charges the user logged (not system payments/balance-updates)
+    const canDelete=tx.type==='charge';
+    const cardLabel=tx.debtName==='Cash/Debit'?'💵 Cash/Debit':'💳 '+tx.debtName;
+    return '<div class="tx-item" id="tx-'+tx.id+'">'+
+      '<div class="tx-icon-emoji">'+emoji+'</div>'+
       '<div class="tx-body">'+
-        '<div class="tx-name">'+tx.debtName+(tx.note?' · '+tx.note:'')+'</div>'+
-        '<div class="tx-meta"><span class="tx-cat">'+label+'</span><span>'+tx.date+'</span></div>'+
+        '<div class="tx-name">'+(tx.note||label)+'</div>'+
+        '<div class="tx-meta">'+
+          '<span class="tx-cat">'+cardLabel+'</span>'+
+          '<span>'+tx.date+'</span>'+
+        '</div>'+
       '</div>'+
-      '<div class="tx-amt '+amtClass+'">'+sign+'$'+tx.amount.toFixed(2)+'</div>'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<div class="tx-amt '+amtClass+'">'+sign+'$'+tx.amount.toFixed(2)+'</div>'+
+        (canDelete?'<button class="tx-del" data-id="'+tx.id+'" data-name="'+tx.debtName+'" data-amt="'+tx.amount+'" data-type="'+tx.type+'" onclick="deleteTxFromBtn(this)" title="Delete">✕</button>':'')+
+      '</div>'+
     '</div>';
   }).join('')+'</div>';
 }
