@@ -323,8 +323,18 @@ const USER_ID='00000000-0000-0000-0000-000000000001';
 // ── DB ──
 async function dbLoadDebts(){
   const{data,error}=await sb.from('debts').select('*').order('created_at');
-  if(error){console.error(error);return[];}
-  return data.map(r=>({id:r.id,name:r.name,type:r.type,originalBalance:r.original_balance,balance:parseFloat(r.balance)||0,rate:parseFloat(r.rate)||0,min:parseFloat(r.min)||0,due:r.due,paid:parseFloat(r.paid)||0}));
+  if(error){console.error('dbLoadDebts:',error.message);return[];}
+  return(data||[]).map(r=>({
+    id:r.id,
+    name:r.name||'',
+    type:r.type||'Credit Card',
+    originalBalance:parseFloat(r.original_balance)||parseFloat(r.balance)||0,
+    balance:parseFloat(r.balance)||0,
+    rate:parseFloat(r.rate)||0,
+    min:parseFloat(r.min)||0,
+    due:r.due||1,
+    paid:parseFloat(r.paid)||0
+  }));
 }
 async function dbAddDebt(d){
   const{data,error}=await sb.from('debts').insert({user_id:USER_ID,name:d.name,type:d.type,original_balance:d.originalBalance,balance:d.balance,rate:d.rate,min:d.min,due:d.due,paid:0}).select().single();
@@ -335,12 +345,22 @@ async function dbUpdateDebt(d){await sb.from('debts').update({name:d.name,type:d
 async function dbDeleteDebt(id){await sb.from('debts').delete().eq('id',id);}
 async function dbLoadHistory(){
   const{data,error}=await sb.from('payments').select('*').order('created_at',{ascending:false}).limit(300);
-  if(error){console.error(error);return[];}
-  return data.map(r=>({id:r.id,debtName:r.debt_name,amount:parseFloat(r.amount)||0,date:r.date,type:r.type||'payment',balanceBefore:parseFloat(r.balance_before)||0,balanceAfter:parseFloat(r.balance_after)||0,category:r.category||'other',note:r.note||''}));
+  if(error){console.error('dbLoadHistory:',error.message);return[];}
+  return(data||[]).map(r=>({
+    id:r.id,
+    debtName:r.debt_name||'',
+    amount:parseFloat(r.amount)||0,
+    date:r.date||'',
+    type:r.type||'charge',
+    balanceBefore:parseFloat(r.balance_before)||0,
+    balanceAfter:parseFloat(r.balance_after)||0,
+    category:r.category||'other',
+    note:r.note||''
+  }));
 }
 async function dbAddTx(tx){
-  const payload={
-    user_id:USER_ID,
+  // Try with all columns first, fall back to minimal if schema is limited
+  const full={
     debt_name:tx.debtName,
     amount:tx.amount,
     date:tx.date,
@@ -349,13 +369,20 @@ async function dbAddTx(tx){
     balance_after:tx.balanceAfter||0,
     category:tx.category||'other',
     note:tx.note||'',
-    person:'shared'  // satisfy NOT NULL if column exists
+    person:'shared'
   };
-  const{data,error}=await sb.from('payments').insert(payload).select().single();
+  let{data,error}=await sb.from('payments').insert(full).select().single();
   if(error){
-    console.error('dbAddTx error:',error.message,error.details,error.hint);
-    toast('DB error: '+error.message,true);
-    return null;
+    // Fall back to minimal columns only
+    console.warn('Full insert failed, trying minimal:',error.message);
+    const minimal={debt_name:tx.debtName,amount:tx.amount,date:tx.date,type:tx.type};
+    const res=await sb.from('payments').insert(minimal).select().single();
+    if(res.error){
+      console.error('dbAddTx error:',res.error.message);
+      toast('DB error: '+res.error.message,true);
+      return null;
+    }
+    data=res.data;
   }
   return{...tx,id:data.id};
 }
@@ -913,6 +940,16 @@ function toast(msg,isError=false){
   el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);
 }
 
+
+// ── DIAGNOSTIC: call checkDB() in browser console to see what's in Supabase ──
+async function checkDB(){
+  const p=await sb.from('payments').select('*').limit(5);
+  const d=await sb.from('debts').select('*').limit(5);
+  console.log('PAYMENTS (last 5):',p.data,p.error);
+  console.log('DEBTS:',d.data,d.error);
+  console.log('Total history in memory:',history.length);
+  console.log('Total debts in memory:',debts.length);
+}
 // ── INIT ──
 async function initApp(){
   renderHeader();
