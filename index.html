@@ -597,7 +597,7 @@ function renderDebts(){
     const intMo=(d.balance*d.rate/100/12).toFixed(0);
     let lastDue=new Date(now.getFullYear(),now.getMonth(),d.due);
     if(lastDue>todayMid)lastDue=new Date(now.getFullYear(),now.getMonth()-1,d.due);
-    const paidCycle=history.find(h=>h.debtName===d.name&&h.type!=='charge'&&parseLD(h.date)>=lastDue);
+    const paidCycle=history.find(h=>h.debtName===d.name&&h.type==='payment'&&parseLD(h.date)>=lastDue);
     let nextDue;
     if(paidCycle){nextDue=new Date(lastDue.getFullYear(),lastDue.getMonth()+1,d.due);}
     else{nextDue=new Date(now.getFullYear(),now.getMonth(),d.due);if(nextDue<todayMid)nextDue=new Date(now.getFullYear(),now.getMonth()+1,d.due);}
@@ -749,7 +749,7 @@ function renderAnalytics(){
     const d=parseLD(tx.date);if(!d||isNaN(d))return;
     const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     if(!monthly[key])monthly[key]={spent:0,paid:0};
-    if(tx.type==='charge')monthly[key].spent+=tx.amount;else if(tx.type==='payment'||tx.type==='income')monthly[key].paid+=tx.amount;
+    if(tx.type==='charge')monthly[key].spent+=tx.amount;else if(tx.type==='payment')monthly[key].paid+=tx.amount;else if(tx.type==='income')monthly[key].income=(monthly[key].income||0)+tx.amount;
   });
   const allMonths=Object.keys(monthly).sort();
   const recent6=allMonths.slice(-6);
