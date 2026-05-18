@@ -933,11 +933,15 @@ function renderPlan(){
 
   html+='<div class="pcrd" style="margin-top:4px">'+
     '<div class="shd" style="margin-top:0">Export Data</div>'+
-    '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
-      '<button class="btn btn-ghost btn-sm" onclick="exportWeekCSV()">⬇ Last 7 Days</button>'+
-      '<button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ All Transactions</button>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">'+
+      '<button class="btn btn-sm" onclick="exportFull()" style="background:var(--accent)">⬇ Full Export</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="exportMonthCSV()">This Month</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="exportWeekCSV()">Last 7 Days</button>'+
     '</div>'+
-    '<div style="font-size:11px;color:var(--text3);margin-top:8px">Downloads as CSV — opens in Excel, Numbers, or Google Sheets</div>'+
+    '<div style="font-size:12px;color:var(--text2);line-height:1.7">'+
+      '<strong style="color:var(--text)">Full Export</strong> includes debt balances, APR, payoff progress, and every transaction with before/after balances.<br>'+
+      'Opens in Excel, Numbers, or Google Sheets.'+
+    '</div>'+
   '</div>';
   el.innerHTML=html;
 }
@@ -954,47 +958,76 @@ function toast(msg,isError=false){
 
 
 // ── EXPORT ──
-function exportCSV(){
-  if(!history.length){toast('No transactions to export',true);return;}
-  const rows=[['Date','Card/Account','Type','Category','Amount','Note']];
-  history.forEach(tx=>{
-    rows.push([
-      tx.date,
-      tx.debtName,
-      tx.type,
-      tx.category||'',
-      tx.amount.toFixed(2),
-      tx.note||''
-    ]);
-  });
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+function downloadCSV(csv, filename){
   const blob=new Blob([csv],{type:'text/csv'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;
-  a.download='transactions-'+new Date().toISOString().split('T')[0]+'.csv';
-  a.click();
+  a.href=url;a.download=filename;a.click();
   URL.revokeObjectURL(url);
-  toast('Downloaded '+history.length+' transactions');
+}
+
+function toCSV(rows){
+  return rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\n');
+}
+
+function exportFull(){
+  const date=new Date().toISOString().split('T')[0];
+  // Sheet 1: Debt Summary
+  let csv='DEBT SUMMARY\n';
+  csv+=toCSV([['Card','Type','Current Balance','Original Balance','APR %','Min Payment','Due Day','Total Paid','% Paid Off']]);
+  csv+='\n';
+  debts.forEach(d=>{
+    const pct=Math.min(100,Math.round((d.paid/(d.originalBalance||1))*100));
+    csv+=toCSV([[d.name,d.type,'$'+d.balance.toFixed(2),'$'+d.originalBalance.toFixed(2),d.rate+'%','$'+d.min,d.due,'$'+d.paid.toFixed(2),pct+'%']]);
+    csv+='\n';
+  });
+  const totalOwed=debts.reduce((s,d)=>s+d.balance,0);
+  const totalPaid=debts.reduce((s,d)=>s+d.paid,0);
+  const monthlyInt=debts.reduce((s,d)=>s+(d.balance*d.rate/100/12),0);
+  csv+=toCSV([['TOTAL','','$'+totalOwed.toFixed(2),'','','','','$'+totalPaid.toFixed(2),'']]);
+  csv+='\n\nMONTHLY INTEREST COST,$'+monthlyInt.toFixed(2)+'\n';
+
+  // Sheet 2: All Transactions
+  csv+='\n\nALL TRANSACTIONS\n';
+  csv+=toCSV([['Date','Card / Account','Type','Category','Amount','Balance Before','Balance After','Note']]);
+  csv+='\n';
+  history.forEach(tx=>{
+    csv+=toCSV([[tx.date,tx.debtName,tx.type,CL[tx.category]||tx.category||'','$'+tx.amount.toFixed(2),'$'+(tx.balanceBefore||0).toFixed(2),'$'+(tx.balanceAfter||0).toFixed(2),tx.note||'']]);
+    csv+='\n';
+  });
+
+  downloadCSV(csv,'finance-export-'+date+'.csv');
+  toast('Downloaded full export');
 }
 
 function exportWeekCSV(){
   const cutoff=new Date();cutoff.setDate(cutoff.getDate()-7);cutoff.setHours(0,0,0,0);
   const recent=history.filter(tx=>{const d=parseLD(tx.date);return d&&d>=cutoff;});
   if(!recent.length){toast('No transactions in last 7 days',true);return;}
-  const rows=[['Date','Card/Account','Type','Category','Amount','Note']];
+  const rows=[['Date','Card / Account','Type','Category','Amount','Note']];
   recent.forEach(tx=>{
-    rows.push([tx.date,tx.debtName,tx.type,tx.category||'',tx.amount.toFixed(2),tx.note||'']);
+    rows.push([tx.date,tx.debtName,tx.type,CL[tx.category]||tx.category||'','$'+tx.amount.toFixed(2),tx.note||'']);
   });
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='last-7-days-'+new Date().toISOString().split('T')[0]+'.csv';
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadCSV(toCSV(rows),'last-7-days-'+new Date().toISOString().split('T')[0]+'.csv');
   toast('Downloaded '+recent.length+' transactions');
+}
+
+function exportMonthCSV(){
+  const now=new Date();
+  const thisKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const thisMonth=history.filter(tx=>{
+    const d=parseLD(tx.date);if(!d)return false;
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    return key===thisKey;
+  });
+  if(!thisMonth.length){toast('No transactions this month',true);return;}
+  const rows=[['Date','Card / Account','Type','Category','Amount','Note']];
+  thisMonth.forEach(tx=>{
+    rows.push([tx.date,tx.debtName,tx.type,CL[tx.category]||tx.category||'','$'+tx.amount.toFixed(2),tx.note||'']);
+  });
+  const monthName=now.toLocaleDateString('en-US',{month:'long',year:'numeric'}).replace(' ','-');
+  downloadCSV(toCSV(rows),monthName+'.csv');
+  toast('Downloaded '+thisMonth.length+' transactions');
 }
 // ── DIAGNOSTIC: call checkDB() in browser console to see what's in Supabase ──
 async function checkDB(){
