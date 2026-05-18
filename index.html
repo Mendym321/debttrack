@@ -28,8 +28,8 @@ body{height:100%;background:var(--bg);color:var(--text);font-family:"Outfit",san
 .header-left{display:flex;align-items:center;gap:10px}
 .hdr-date{font-size:11px;color:var(--text3);font-family:"JetBrains Mono",monospace}
 .tab-area{flex:1;overflow:hidden;position:relative}
-.tab-pane{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transition:opacity .2s;padding:16px 20px 20px;-webkit-overflow-scrolling:touch}
-.tab-pane.active{opacity:1;pointer-events:all}
+.tab-pane{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;padding:16px 20px 20px;-webkit-overflow-scrolling:touch}
+.tab-pane.active{display:block}
 .tab-pane::-webkit-scrollbar{display:none}
 .bottom-nav{display:flex;border-top:1px solid var(--border);background:rgba(15,15,19,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:8px 4px max(12px,env(safe-area-inset-bottom));flex-shrink:0}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:6px 4px;color:var(--text3);transition:color .15s;font-family:"Outfit",sans-serif}
@@ -394,10 +394,13 @@ let planStrategy='avalanche';
 
 // ── NAV ──
 function switchTab(btn){
-  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
   const tab=btn.dataset.tab;
-  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-  document.getElementById('pane-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-pane').forEach(p=>{p.classList.remove('active');p.style.display='none';});
+  const pane=document.getElementById('pane-'+tab);
+  pane.classList.add('active');
+  pane.style.display='block';
   if(tab==='debts')renderDebts();
   if(tab==='analytics')renderAnalytics();
   if(tab==='plan')renderPlan();
@@ -928,6 +931,14 @@ function renderPlan(){
       (planStrategy==='avalanche'?'<strong style="color:var(--text)">Avalanche:</strong> Pay minimums everywhere, dump all extra on the highest-rate debt. Mathematically saves the most money.':'<strong style="color:var(--text)">Snowball:</strong> Pay minimums everywhere, dump all extra on the smallest balance. Quick wins build momentum.')+
     '</div></div>';
 
+  html+='<div class="pcrd" style="margin-top:4px">'+
+    '<div class="shd" style="margin-top:0">Export Data</div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+      '<button class="btn btn-ghost btn-sm" onclick="exportWeekCSV()">⬇ Last 7 Days</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ All Transactions</button>'+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--text3);margin-top:8px">Downloads as CSV — opens in Excel, Numbers, or Google Sheets</div>'+
+  '</div>';
   el.innerHTML=html;
 }
 function setPlan(s){planStrategy=s;renderPlan();}
@@ -941,6 +952,50 @@ function toast(msg,isError=false){
 }
 
 
+
+// ── EXPORT ──
+function exportCSV(){
+  if(!history.length){toast('No transactions to export',true);return;}
+  const rows=[['Date','Card/Account','Type','Category','Amount','Note']];
+  history.forEach(tx=>{
+    rows.push([
+      tx.date,
+      tx.debtName,
+      tx.type,
+      tx.category||'',
+      tx.amount.toFixed(2),
+      tx.note||''
+    ]);
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='transactions-'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Downloaded '+history.length+' transactions');
+}
+
+function exportWeekCSV(){
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-7);cutoff.setHours(0,0,0,0);
+  const recent=history.filter(tx=>{const d=parseLD(tx.date);return d&&d>=cutoff;});
+  if(!recent.length){toast('No transactions in last 7 days',true);return;}
+  const rows=[['Date','Card/Account','Type','Category','Amount','Note']];
+  recent.forEach(tx=>{
+    rows.push([tx.date,tx.debtName,tx.type,tx.category||'',tx.amount.toFixed(2),tx.note||'']);
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='last-7-days-'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Downloaded '+recent.length+' transactions');
+}
 // ── DIAGNOSTIC: call checkDB() in browser console to see what's in Supabase ──
 async function checkDB(){
   const p=await sb.from('payments').select('*').limit(5);
