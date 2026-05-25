@@ -1044,6 +1044,7 @@ function exportMonthCSV(){
 // ══════════════════════════════════════════════
 function renderTrends(){
   const el=document.getElementById('trends-out');
+  try{
   if(!history.length&&!debts.length){
     el.innerHTML='<div class="es"><div class="es-icon">📈</div><p>No data yet. Log expenses and payments to see trends.</p></div>';
     return;
@@ -1310,6 +1311,10 @@ function renderTrends(){
   html+='</div></div>';
 
   el.innerHTML=html;
+  }catch(err){
+    console.error('renderTrends error:',err);
+    el.innerHTML='<div class="card card-sm"><div style="color:var(--red);font-size:13px;font-weight:600">Render error: '+err.message+'</div><div style="color:var(--text2);font-size:12px;margin-top:6px">Check console for details.</div></div>';
+  }
 }
 // ── DIAGNOSTIC: call checkDB() in browser console to see what's in Supabase ──
 async function checkDB(){
