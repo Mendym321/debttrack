@@ -1044,277 +1044,116 @@ function exportMonthCSV(){
 // ══════════════════════════════════════════════
 function renderTrends(){
   const el=document.getElementById('trends-out');
-  try{
-  if(!history.length&&!debts.length){
-    el.innerHTML='<div class="es"><div class="es-icon">📈</div><p>No data yet. Log expenses and payments to see trends.</p></div>';
-    return;
-  }
+  if(!el){console.error('trends-out not found');return;}
 
-  // ── Build monthly buckets from transaction history ──
+  // Build monthly data from history
   const monthly={};
-  history.forEach(tx=>{
-    const d=parseLD(tx.date);if(!d||isNaN(d))return;
-    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-    if(!monthly[key])monthly[key]={spent:0,paid:0,income:0,net:0,label:''};
-    const m=monthly[key];
-    m.label=d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
-    if(tx.type==='charge')m.spent+=tx.amount;
-    else if(tx.type==='payment')m.paid+=tx.amount;
-    else if(tx.type==='income')m.income+=tx.amount;
+  (history||[]).forEach(tx=>{
+    try{
+      const d=parseLD(tx.date);
+      if(!d||isNaN(d.getTime()))return;
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      const label=d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+      if(!monthly[key])monthly[key]={key,label,spent:0,paid:0,income:0};
+      if(tx.type==='charge')monthly[key].spent+=tx.amount;
+      else if(tx.type==='payment')monthly[key].paid+=tx.amount;
+      else if(tx.type==='income')monthly[key].income+=tx.amount;
+    }catch(e){}
   });
-  // net = payments - spending (positive = debt dropping)
-  Object.keys(monthly).forEach(k=>{monthly[k].net=monthly[k].paid-monthly[k].spent;});
 
-  const allKeys=Object.keys(monthly).sort();
+  const keys=Object.keys(monthly).sort();
   const now=new Date();
   const thisKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const totalNow=debts.reduce((s,d)=>s+(d.balance||0),0);
+  const monthlyInt=debts.reduce((s,d)=>s+(d.balance*d.rate/100/12),0);
 
-  // ── Per-card monthly balance tracking ──
-  // Reconstruct balance over time per card from transactions
-  const cardKeys=debts.map(d=>d.name);
-  const cardMonthly={};// {cardName: {monthKey: endBalance}}
-  debts.forEach(d=>{cardMonthly[d.name]={};});
-
-  // Get current balances and work backward using transactions
-  // Group transactions by card and month, sorted oldest first
-  const txByCard={};
-  history.forEach(tx=>{
-    if(!txByCard[tx.debtName])txByCard[tx.debtName]=[];
-    txByCard[tx.debtName].push(tx);
-  });
-
-  // For each debt, reconstruct month-end balances
-  debts.forEach(d=>{
-    const txs=(txByCard[d.name]||[]).slice().sort((a,b)=>{
-      const da=parseLD(a.date),db=parseLD(b.date);
-      return da-db;
-    });
-    if(!txs.length){
-      // No transactions — just use current balance for current month
-      cardMonthly[d.name][thisKey]=d.balance;
-      return;
-    }
-    // Walk through months and track balance changes
-    // Start from the earliest transaction's balanceBefore
-    let runningBal=txs[0].balanceBefore||d.balance;
-    const monthsWithTx=[...new Set(txs.map(tx=>{
-      const dd=parseLD(tx.date);
-      return dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0');
-    }))].sort();
-
-    monthsWithTx.forEach(mk=>{
-      const monthTxs=txs.filter(tx=>{
-        const dd=parseLD(tx.date);
-        return dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')===mk;
-      });
-      monthTxs.forEach(tx=>{
-        if(tx.type==='payment')runningBal-=tx.amount;
-        else if(tx.type==='charge')runningBal+=tx.amount;
-      });
-      cardMonthly[d.name][mk]=Math.max(0,parseFloat(runningBal.toFixed(2)));
-    });
-    // Always set current month to actual current balance
-    cardMonthly[d.name][thisKey]=d.balance;
-  });
-
-  // ── Total debt per month (sum all cards) ──
-  const totalDebtByMonth={};
-  allKeys.forEach(mk=>{
-    let total=0;
-    debts.forEach(d=>{
-      // Find closest known balance at or before this month
-      const knownMonths=Object.keys(cardMonthly[d.name]||{}).sort();
-      const relevant=knownMonths.filter(k=>k<=mk);
-      if(relevant.length){total+=cardMonthly[d.name][relevant[relevant.length-1]]||0;}
-      else{total+=d.balance;}// fallback to current
-    });
-    totalDebtByMonth[mk]=total;
-  });
-  totalDebtByMonth[thisKey]=debts.reduce((s,d)=>s+d.balance,0);
-
-  const debtKeys=Object.keys(totalDebtByMonth).sort();
-  const maxDebt=Math.max(...debtKeys.map(k=>totalDebtByMonth[k]),1);
-  const minDebt=Math.min(...debtKeys.map(k=>totalDebtByMonth[k]),0);
-
-  // ── SVG Helpers ──
-  function svgBar(x,y,w,h,fill,rx){return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+Math.max(1,h)+'" fill="'+fill+'" rx="'+(rx||2)+'"/>';}
-  function svgText(x,y,txt,fill,size,anchor){return '<text x="'+x+'" y="'+y+'" fill="'+(fill||'#5a5a78')+'" font-size="'+(size||9)+'" text-anchor="'+(anchor||'middle')+'" font-family="JetBrains Mono,monospace">'+txt+'</text>';}
-  function svgLine(x1,y1,x2,y2,stroke,sw,dash){return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+(stroke||'#2c2c3a')+'" stroke-width="'+(sw||1)+(dash?' stroke-dasharray="'+dash+'"':'')+'/>';}
+  // 3-month average net
+  const last3=keys.slice(-3).map(k=>monthly[k]);
+  const avgNet=last3.length?last3.reduce((s,m)=>s+(m.paid-m.spent),0)/last3.length:0;
+  const thisM=monthly[thisKey]||{spent:0,paid:0,income:0};
+  const thisNet=thisM.paid-thisM.spent;
 
   let html='';
 
-  // ── 1. TOTAL DEBT TREND ──
-  const W=320,H=110,PAD={t:12,r:12,b:24,l:48};
-  const cW=W-PAD.l-PAD.r,cH=H-PAD.t-PAD.b;
-  const debtRange=maxDebt-minDebt||1;
-  const n=debtKeys.length;
+  // ── SCORECARD ──
+  html+='<div class="shd" style="margin-top:0">Scorecard</div>';
+  html+='<div class="sg sg2" style="margin-bottom:10px">';
+  html+='<div class="sbox"><div class="slabel">Total Debt</div><div class="sval red">$'+Math.round(totalNow).toLocaleString()+'</div></div>';
+  html+='<div class="sbox"><div class="slabel">Interest/Mo</div><div class="sval amber">$'+Math.round(monthlyInt)+'</div></div>';
+  html+='<div class="sbox"><div class="slabel">This Month Net</div><div class="sval '+(thisNet>=0?'green':'red')+'">'+(thisNet>=0?'+':'')+Math.round(thisNet).toLocaleString()+'</div></div>';
+  html+='<div class="sbox"><div class="slabel">3-Mo Avg Net</div><div class="sval '+(avgNet>=0?'green':'red')+'">'+(avgNet>=0?'+':'')+Math.round(avgNet)+'/mo</div></div>';
+  html+='</div>';
 
-  let svgDebt='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">';
-  // grid lines
-  [0,.25,.5,.75,1].forEach(p=>{
-    const yy=PAD.t+cH*(1-p);
-    const val=minDebt+debtRange*p;
-    svgDebt+=svgLine(PAD.l,yy,W-PAD.r,yy,'#2c2c3a',1,n>1?'':'');
-    svgDebt+=svgText(PAD.l-4,yy+3,'$'+Math.round(val/1000)+'k','#5a5a78',8,'end');
-  });
+  // ── MONTH BY MONTH TABLE ──
+  if(keys.length){
+    const maxSpent=Math.max(...keys.map(k=>monthly[k].spent),1);
+    const maxPaid=Math.max(...keys.map(k=>monthly[k].paid),1);
+    const maxVal=Math.max(maxSpent,maxPaid,1);
 
-  if(n>=2){
-    // Area fill
-    let pts=debtKeys.map((k,i)=>{
-      const x=PAD.l+(i/(n-1))*cW;
-      const y=PAD.t+cH*(1-(totalDebtByMonth[k]-minDebt)/debtRange);
-      return [x,y];
+    html+='<div class="shd">Month by Month</div>';
+    html+='<div class="card card-sm" style="margin-bottom:10px">';
+
+    // Bar chart using CSS
+    html+='<div style="display:flex;align-items:flex-end;gap:4px;height:80px;margin-bottom:8px;padding:0 2px">';
+    keys.slice(-8).forEach(k=>{
+      const m=monthly[k];
+      const spentH=Math.max(2,Math.round((m.spent/maxVal)*72));
+      const paidH=Math.max(2,Math.round((m.paid/maxVal)*72));
+      html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0;justify-content:flex-end">';
+      html+='<div style="width:100%;display:flex;gap:1px;align-items:flex-end;justify-content:center">';
+      html+='<div style="flex:1;height:'+spentH+'px;background:rgba(248,113,113,.65);border-radius:2px 2px 0 0"></div>';
+      html+='<div style="flex:1;height:'+paidH+'px;background:rgba(52,211,153,.7);border-radius:2px 2px 0 0"></div>';
+      html+='</div></div>';
     });
-    let path='M '+pts[0][0]+' '+pts[0][1];
-    for(let i=1;i<pts.length;i++){
-      const mx=(pts[i-1][0]+pts[i][0])/2;
-      path+=' C '+mx+' '+pts[i-1][1]+' '+mx+' '+pts[i][1]+' '+pts[i][0]+' '+pts[i][1];
-    }
-    const areaPath=path+' L '+pts[pts.length-1][0]+' '+(PAD.t+cH)+' L '+pts[0][0]+' '+(PAD.t+cH)+' Z';
-    svgDebt+='<defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f87171" stop-opacity=".25"/><stop offset="100%" stop-color="#f87171" stop-opacity=".02"/></linearGradient></defs>';
-    svgDebt+='<path d="'+areaPath+'" fill="url(#dg)"/>';
-    svgDebt+='<path d="'+path+'" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
-    // Dots + labels
-    pts.forEach(([x,y],i)=>{
-      svgDebt+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="#f87171"/>';
-      const k=debtKeys[i];
-      const label=monthly[k]?monthly[k].label:new Date(parseInt(k.split('-')[0]),parseInt(k.split('-')[1])-1,1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
-      svgDebt+=svgText(x,H-6,label,'#5a5a78',8,'middle');
+    html+='</div>';
+
+    // Labels
+    html+='<div style="display:flex;gap:4px;margin-bottom:12px">';
+    keys.slice(-8).forEach(k=>{
+      html+='<div style="flex:1;font-size:9px;color:var(--text3);text-align:center;font-family:JetBrains Mono,monospace">'+monthly[k].label+'</div>';
     });
-    // Direction arrow on last segment
-    const last=pts[pts.length-1],prev=pts[pts.length-2];
-    const going=last[1]<prev[1]?'↑ rising':'↓ dropping';
-    const col=last[1]<prev[1]?'#f87171':'#34d399';
-    svgDebt+='<text x="'+(W-PAD.r)+'" y="'+(PAD.t+8)+'" fill="'+col+'" font-size="9" text-anchor="end" font-family="Outfit,sans-serif" font-weight="600">'+going+'</text>';
-  } else {
-    svgDebt+=svgText(W/2,H/2,'Need more months of data','#5a5a78',9,'middle');
+    html+='</div>';
+
+    // Legend
+    html+='<div style="display:flex;gap:14px;margin-bottom:14px">';
+    html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(248,113,113,.65)"></div>Spent</div>';
+    html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(52,211,153,.7)"></div>Payments</div>';
+    html+='</div>';
+
+    // Row table
+    [...keys].reverse().forEach(k=>{
+      const m=monthly[k];
+      const net=m.paid-m.spent;
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--border)">';
+      html+='<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--text2);width:52px;flex-shrink:0">'+m.label+'</div>';
+      html+='<div style="font-size:12px;color:var(--red)">−$'+Math.round(m.spent).toLocaleString()+'</div>';
+      html+='<div style="font-size:12px;color:var(--green)">+$'+Math.round(m.paid).toLocaleString()+'</div>';
+      html+='<div style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:700;color:'+(net>=0?'var(--green)':'var(--red)')+'">'+( net>=0?'↓':'↑')+'$'+Math.round(Math.abs(net)).toLocaleString()+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
   }
-  svgDebt+='</svg>';
 
-  const currentTotal=debts.reduce((s,d)=>s+d.balance,0);
-  const firstDebt=totalDebtByMonth[debtKeys[0]]||currentTotal;
-  const debtChange=currentTotal-firstDebt;
-  const debtChangeStr=(debtChange<=0?'↓ Down $':'↑ Up $')+Math.abs(Math.round(debtChange)).toLocaleString()+' since '+( monthly[debtKeys[0]]?monthly[debtKeys[0]].label:'start');
-
-  html+='<div class="shd" style="margin-top:0">Total Debt Over Time</div>';
-  html+='<div class="card card-sm" style="margin-bottom:10px">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">';
-  html+='<div><div style="font-size:24px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--red)">$'+Math.round(currentTotal).toLocaleString()+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">total owed today</div></div>';
-  html+='<div style="font-size:12px;font-weight:600;color:'+(debtChange<=0?'var(--green)':'var(--red)')+'">'+debtChangeStr+'</div>';
-  html+='</div>';
-  html+=svgDebt;
-  html+='</div>';
-
-  // ── 2. MONTHLY NET (winning or losing each month) ──
-  const recent8=allKeys.slice(-8);
-  const maxAbs=Math.max(...recent8.map(k=>Math.max(Math.abs(monthly[k].spent),monthly[k].paid)),1);
-  const BH=72,BW=320;
-  const barW=Math.floor((BW-PAD.l-PAD.r)/(recent8.length||1))-4;
-
-  let svgNet='<svg viewBox="0 0 '+BW+' 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">';
-  // zero line at y=72+12=84
-  const baseY=84;
-  svgNet+=svgLine(PAD.l,baseY,BW-PAD.r,baseY,'#383848',1);
-  svgNet+=svgText(PAD.l-4,baseY+3,'$0','#5a5a78',8,'end');
-
-  recent8.forEach((k,i)=>{
-    const m=monthly[k];
-    const x=PAD.l+i*((BW-PAD.l-PAD.r)/recent8.length)+2;
-    const spentH=(m.spent/maxAbs)*BH;
-    const paidH=(m.paid/maxAbs)*BH;
-    // Spent bar going down from baseline
-    svgNet+=svgBar(x,baseY,barW,spentH,'rgba(248,113,113,0.6)',2);
-    // Paid bar going up from baseline
-    svgNet+=svgBar(x,baseY-paidH,barW,paidH,'rgba(52,211,153,0.7)',2);
-    // Month label
-    svgNet+=svgText(x+barW/2,126,m.label,'#5a5a78',8,'middle');
-    // Net indicator dot
-    const net=m.paid-m.spent;
-    svgNet+='<circle cx="'+(x+barW/2)+'" cy="'+(baseY-(net/maxAbs)*BH)+'" r="2.5" fill="'+(net>=0?'#34d399':'#f87171')+'"/>';
-  });
-  // Legend
-  svgNet+='<rect x="'+PAD.l+'" y="4" width="8" height="8" fill="rgba(248,113,113,0.6)" rx="1"/>';
-  svgNet+=svgText(PAD.l+12,11,'Spent','#9898b8',8,'start');
-  svgNet+='<rect x="'+( PAD.l+52)+'" y="4" width="8" height="8" fill="rgba(52,211,153,0.7)" rx="1"/>';
-  svgNet+=svgText(PAD.l+66,11,'Paid','#9898b8',8,'start');
-  svgNet+='<circle cx="'+(PAD.l+104)+'" cy="8" r="2.5" fill="#34d399"/>';
-  svgNet+=svgText(PAD.l+110,11,'Net','#9898b8',8,'start');
-  svgNet+='</svg>';
-
-  // Win/lose streak
-  const recentNets=recent8.map(k=>monthly[k].net);
-  let streak=0;
-  for(let i=recentNets.length-1;i>=0;i--){if(recentNets[i]>=0)streak++;else break;}
-  let streakLose=0;
-  for(let i=recentNets.length-1;i>=0;i--){if(recentNets[i]<0)streakLose++;else break;}
-  const streakMsg=streak>1?'✓ Winning '+streak+' months in a row':streakLose>1?'⚠ Debt growing '+streakLose+' months in a row':'';
-  const thisM=monthly[thisKey]||{spent:0,paid:0,net:0};
-
-  html+='<div class="shd">Monthly: Spending vs Payments</div>';
-  html+='<div class="card card-sm" style="margin-bottom:10px">';
-  html+='<div style="display:flex;gap:8px;margin-bottom:12px">';
-  html+='<div class="sbox" style="flex:1"><div class="slabel">This Month Spent</div><div class="sval red" style="font-size:18px">$'+Math.round(thisM.spent).toLocaleString()+'</div></div>';
-  html+='<div class="sbox" style="flex:1"><div class="slabel">This Month Paid</div><div class="sval green" style="font-size:18px">$'+Math.round(thisM.paid).toLocaleString()+'</div></div>';
-  html+='<div class="sbox" style="flex:1"><div class="slabel">Net</div><div class="sval '+(thisM.net>=0?'green':'red')+'" style="font-size:18px">'+(thisM.net>=0?'+':'')+Math.round(thisM.net).toLocaleString()+'</div></div>';
-  html+='</div>';
-  html+=svgNet;
-  if(streakMsg)html+='<div style="text-align:center;font-size:12px;font-weight:600;color:'+(streak>1?'var(--green)':'var(--amber)')+';margin-top:10px">'+streakMsg+'</div>';
-  html+='</div>';
-
-  // ── 3. PER-CARD BALANCES ──
-  html+='<div class="shd">Per-Card Balances</div>';
-  const activeDebts=debts.filter(d=>d.balance>0||d.originalBalance>0);
-  const totalOriginal=activeDebts.reduce((s,d)=>s+(d.originalBalance||d.balance),0);
-  const totalCurrent=activeDebts.reduce((s,d)=>s+d.balance,0);
-
-  activeDebts.forEach(d=>{
-    const pct=Math.min(100,Math.round((d.paid/(d.originalBalance||1))*100));
+  // ── PER CARD ──
+  html+='<div class="shd">Cards</div>';
+  debts.forEach(d=>{
+    const pct=Math.min(100,d.originalBalance>0?Math.round((d.paid/d.originalBalance)*100):0);
     const intMo=(d.balance*d.rate/100/12);
-    // trend for this card
-    const cardMths=Object.keys(cardMonthly[d.name]||{}).sort().slice(-3);
-    let trend='';
-    if(cardMths.length>=2){
-      const first=cardMonthly[d.name][cardMths[0]];
-      const last=cardMonthly[d.name][cardMths[cardMths.length-1]];
-      const diff=last-first;
-      trend=diff<=0?'<span style="color:var(--green);font-size:11px;font-weight:600">↓ $'+Math.abs(Math.round(diff)).toLocaleString()+' last '+cardMths.length+'mo</span>':'<span style="color:var(--red);font-size:11px;font-weight:600">↑ $'+Math.round(diff).toLocaleString()+' last '+cardMths.length+'mo</span>';
-    }
     const barColor=d.rate===0?'var(--blue)':d.rate<10?'var(--green)':d.rate<20?'var(--amber)':'var(--red)';
     html+='<div class="card card-sm" style="margin-bottom:8px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
     html+='<div><div style="font-size:15px;font-weight:700">'+d.name+'</div>';
-    html+='<div style="font-size:11px;color:var(--text3);margin-top:1px">'+(d.rate===0?'0% APR':d.rate+'% APR · $'+intMo.toFixed(0)+'/mo interest')+'</div></div>';
-    html+='<div style="text-align:right"><div style="font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;color:var(--red)">$'+Math.round(d.balance).toLocaleString()+'</div>';
-    if(trend)html+='<div>'+trend+'</div>';
-    html+='</div></div>';
-    // Progress bar
-    html+='<div style="height:6px;background:var(--surface);border-radius:99px;overflow:hidden;margin-bottom:6px">';
-    html+='<div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:99px;transition:width .8s"></div></div>';
+    html+='<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(d.rate===0?'0% APR — free to carry':d.rate+'% APR · $'+intMo.toFixed(0)+'/mo interest')+'</div></div>';
+    html+='<div style="font-family:JetBrains Mono,monospace;font-size:20px;font-weight:700;color:var(--red)">$'+Math.round(d.balance).toLocaleString()+'</div>';
+    html+='</div>';
+    html+='<div style="height:5px;background:var(--surface);border-radius:99px;overflow:hidden;margin-bottom:6px">';
+    html+='<div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:99px"></div></div>';
     html+='<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">';
     html+='<span>'+pct+'% paid off</span><span>$'+Math.round(d.paid).toLocaleString()+' paid total</span></div>';
     html+='</div>';
   });
 
-  // ── 4. SUMMARY SCORECARD ──
-  const avgNetArr=allKeys.slice(-3).map(k=>monthly[k].net);
-  const avgNet3=avgNetArr.length?avgNetArr.reduce((s,v)=>s+v,0)/avgNetArr.length:0;
-  const monthsToFree=avgNet3>0?Math.ceil(totalCurrent/avgNet3):null;
-  const freeDate=monthsToFree?new Date(now.getFullYear(),now.getMonth()+monthsToFree,1).toLocaleDateString('en-US',{month:'short',year:'numeric'}):null;
-
-  html+='<div class="shd">Scorecard</div>';
-  html+='<div class="card card-sm" style="margin-bottom:16px">';
-  html+='<div class="sg sg2" style="margin-bottom:0">';
-  html+='<div class="sbox"><div class="slabel">Total Debt</div><div class="sval red" style="font-size:16px">$'+Math.round(totalCurrent).toLocaleString()+'</div></div>';
-  html+='<div class="sbox"><div class="slabel">Monthly Interest</div><div class="sval amber" style="font-size:16px">$'+Math.round(debts.reduce((s,d)=>s+(d.balance*d.rate/100/12),0)).toLocaleString()+'</div></div>';
-  html+='<div class="sbox"><div class="slabel">3-Mo Avg Net</div><div class="sval '+(avgNet3>=0?'green':'red')+'" style="font-size:16px">'+(avgNet3>=0?'+':'')+Math.round(avgNet3).toLocaleString()+'/mo</div></div>';
-  html+=freeDate?'<div class="sbox"><div class="slabel">Debt-Free Est.</div><div class="sval accent" style="font-size:14px">'+freeDate+'</div><div class="ssub">at current pace</div></div>':'<div class="sbox"><div class="slabel">Debt-Free Est.</div><div class="sval" style="font-size:13px;color:var(--text3)">Pay more than you spend</div></div>';
-  html+='</div></div>';
-
   el.innerHTML=html;
-  }catch(err){
-    console.error('renderTrends error:',err);
-    el.innerHTML='<div class="card card-sm"><div style="color:var(--red);font-size:13px;font-weight:600">Render error: '+err.message+'</div><div style="color:var(--text2);font-size:12px;margin-top:6px">Check console for details.</div></div>';
-  }
 }
 // ── DIAGNOSTIC: call checkDB() in browser console to see what's in Supabase ──
 async function checkDB(){
