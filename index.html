@@ -748,135 +748,173 @@ async function recordSpread(debtName,totalSpent,todayMid,balanceBefore,balanceAf
 
 function renderAnalytics(){
   const el=document.getElementById('analytics-out');
-  const filtered=history;
-  const charges=filtered.filter(h=>h.type==='charge');
-  if(!filtered.length){el.innerHTML='<div class="es"><div class="es-icon">📊</div><p>No data yet.<br>Log expenses to see analytics.</p></div>';return;}
+  const charges=history.filter(h=>h.type==='charge');
+  if(!charges.length){el.innerHTML='<div class="es"><div class="es-icon">📊</div><p>No spending data yet.<br>Log expenses to see analytics.</p></div>';return;}
+
   const now=new Date();
-  // monthly buckets
+  const thisKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const thisMonthName=now.toLocaleDateString('en-US',{month:'long'});
+
+  // Split: credit card charges vs cash/debit
+  const creditCharges=charges.filter(tx=>tx.debtName!=='Cash/Debit');
+  const cashCharges=charges.filter(tx=>tx.debtName==='Cash/Debit');
+
+  // Monthly spending buckets (charges only)
   const monthly={};
-  filtered.forEach(tx=>{
+  charges.forEach(tx=>{
     const d=parseLD(tx.date);if(!d||isNaN(d))return;
     const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-    if(!monthly[key])monthly[key]={spent:0,paid:0};
-    if(tx.type==='charge')monthly[key].spent+=tx.amount;else if(tx.type==='payment')monthly[key].paid+=tx.amount;else if(tx.type==='income')monthly[key].income=(monthly[key].income||0)+tx.amount;
+    if(!monthly[key])monthly[key]={total:0,credit:0,cash:0,label:''};
+    monthly[key].label=d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+    monthly[key].total+=tx.amount;
+    if(tx.debtName==='Cash/Debit')monthly[key].cash+=tx.amount;
+    else monthly[key].credit+=tx.amount;
   });
-  const allMonths=Object.keys(monthly).sort();
-  const recent6=allMonths.slice(-6);
-  const thisKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  const thisM=monthly[thisKey]||{spent:0,paid:0};
-  const thisMonthName=now.toLocaleDateString('en-US',{month:'long'});
-  const rd=recent6.map(k=>monthly[k]);
-  const avgSpent=rd.length?rd.reduce((s,m)=>s+m.spent,0)/rd.length:0;
-  const avgPaid=rd.length?rd.reduce((s,m)=>s+m.paid,0)/rd.length:0;
-  const netMo=avgPaid-avgSpent;
 
-  // category breakdown this month
+  const allKeys=Object.keys(monthly).sort();
+  const recent6=allKeys.slice(-6);
+  const thisM=monthly[thisKey]||{total:0,credit:0,cash:0};
+
+  // This month categories (all spending)
   const catTotals={};
   charges.forEach(tx=>{
     const d=parseLD(tx.date);if(!d)return;
     const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     if(key!==thisKey)return;
-    const cat=tx.category||'other';catTotals[cat]=(catTotals[cat]||0)+tx.amount;
+    const cat=tx.category||'other';
+    catTotals[cat]=(catTotals[cat]||0)+tx.amount;
   });
-  const topCats=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const topCats=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,6);
 
-  // trend
+  // Spending trend
   let trendMsg='',trendColor='var(--text2)';
   if(recent6.length>=3){
     const h=Math.floor(recent6.length/2);
-    const early=recent6.slice(0,h).reduce((s,k)=>s+monthly[k].spent,0)/h;
-    const late=recent6.slice(-h).reduce((s,k)=>s+monthly[k].spent,0)/h;
+    const early=recent6.slice(0,h).reduce((s,k)=>s+(monthly[k]?.total||0),0)/h;
+    const late=recent6.slice(-h).reduce((s,k)=>s+(monthly[k]?.total||0),0)/h;
     const delta=late-early;
     if(Math.abs(delta)<20)trendMsg='Spending is stable';
-    else if(delta>0){trendMsg='Spending up ~$'+Math.round(delta)+'/mo';trendColor='var(--red)';}
-    else{trendMsg='Spending down ~$'+Math.round(Math.abs(delta))+'/mo';trendColor='var(--green)';}
+    else if(delta>0){trendMsg='Spending trending up ~$'+Math.round(delta)+'/mo';trendColor='var(--red)';}
+    else{trendMsg='Spending trending down ~$'+Math.round(Math.abs(delta))+'/mo';trendColor='var(--green)';}
   }
 
-  // bar chart
-  const maxV=Math.max(...recent6.map(k=>Math.max(monthly[k].spent,monthly[k].paid)),1);
-  const bars=recent6.map(k=>{
-    const[y,m]=k.split('-');
-    const sh=Math.max(3,(monthly[k].spent/maxV)*72);const ph=Math.max(3,(monthly[k].paid/maxV)*72);
-    return '<div class="mbg"><div class="mb spent" style="height:'+sh+'px" title="Spent $'+Math.round(monthly[k].spent)+'"></div><div class="mb paid" style="height:'+ph+'px" title="Paid $'+Math.round(monthly[k].paid)+'"></div></div>';
-  }).join('');
-  const barLabels=recent6.map(k=>{const[y,m]=k.split('-');return '<div class="mbl">'+new Date(parseInt(y),parseInt(m)-1,1).toLocaleDateString('en-US',{month:'short'})+'</div>';}).join('');
+  // Avg monthly spending
+  const avgTotal=recent6.length?recent6.reduce((s,k)=>s+(monthly[k]?.total||0),0)/recent6.length:0;
+  const avgCredit=recent6.length?recent6.reduce((s,k)=>s+(monthly[k]?.credit||0),0)/recent6.length:0;
+  const avgCash=recent6.length?recent6.reduce((s,k)=>s+(monthly[k]?.cash||0),0)/recent6.length:0;
 
-  const thisNet=thisM.paid-thisM.spent;
   let html='';
 
-  // this month summary
-  html+='<div class="sg sg2" style="margin-bottom:4px">'+
-    '<div class="sbox"><div class="slabel">'+thisMonthName+' Spent</div><div class="sval red">$'+Math.round(thisM.spent).toLocaleString()+'</div></div>'+
-    '<div class="sbox"><div class="slabel">'+thisMonthName+' Paid</div><div class="sval green">$'+Math.round(thisM.paid).toLocaleString()+'</div></div></div>';
-  html+='<div class="sbox" style="margin-bottom:10px;text-align:center">'+
-    '<div class="slabel">Net This Month</div>'+
-    '<div class="sval '+(thisNet>=0?'green':'red')+'">'+(thisNet>=0?'+':'-')+'$'+Math.round(Math.abs(thisNet)).toLocaleString()+'</div>'+
-    '<div class="ssub">'+(thisNet>=0?'Debt is dropping ✓':'Debt is growing ⚠️')+'</div></div>';
+  // ── THIS MONTH SUMMARY ──
+  html+='<div class="shd" style="margin-top:0">'+thisMonthName+' Spending</div>';
+  html+='<div class="sg sg2" style="margin-bottom:4px">';
+  html+='<div class="sbox"><div class="slabel">Total Spent</div><div class="sval red">$'+Math.round(thisM.total).toLocaleString()+'</div><div class="ssub">this month</div></div>';
+  html+='<div class="sbox"><div class="slabel">Avg / Month</div><div class="sval amber">$'+Math.round(avgTotal).toLocaleString()+'</div><div class="ssub">last '+recent6.length+' months</div></div>';
+  html+='</div>';
 
-  // bar chart
+  // Credit vs Cash breakdown
+  html+='<div class="card card-sm" style="margin-bottom:10px">';
+  html+='<div class="shd" style="margin-top:0">Credit Card vs Cash/Debit</div>';
+  // This month
+  const creditPct=thisM.total>0?Math.round(thisM.credit/thisM.total*100):0;
+  const cashPct=thisM.total>0?Math.round(thisM.cash/thisM.total*100):0;
+  html+='<div style="margin-bottom:12px">';
+  html+='<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:6px"><span>This month</span></div>';
+  html+='<div style="display:flex;gap:2px;height:8px;border-radius:99px;overflow:hidden;margin-bottom:6px">';
+  if(creditPct>0)html+='<div style="flex:'+creditPct+';background:var(--red);opacity:.7"></div>';
+  if(cashPct>0)html+='<div style="flex:'+cashPct+';background:var(--blue);opacity:.7"></div>';
+  html+='</div>';
+  html+='<div style="display:flex;gap:16px">';
+  html+='<div style="font-size:12px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--red);opacity:.7;margin-right:5px"></span><span style="color:var(--text2)">Credit card </span><strong style="color:var(--red)">$'+Math.round(thisM.credit).toLocaleString()+'</strong></div>';
+  html+='<div style="font-size:12px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--blue);opacity:.7;margin-right:5px"></span><span style="color:var(--text2)">Cash/Debit </span><strong style="color:var(--blue)">$'+Math.round(thisM.cash).toLocaleString()+'</strong></div>';
+  html+='</div></div>';
+  // Note on debt impact
+  if(thisM.credit>0)html+='<div style="font-size:11px;color:var(--text3);padding:8px;background:rgba(248,113,113,.06);border-radius:8px;border-left:3px solid var(--red)">$'+Math.round(thisM.credit).toLocaleString()+' on credit cards added to your debt this month</div>';
+  if(thisM.cash>0)html+='<div style="font-size:11px;color:var(--text3);padding:8px;background:rgba(96,165,250,.06);border-radius:8px;border-left:3px solid var(--blue);margin-top:6px">$'+Math.round(thisM.cash).toLocaleString()+' cash/debit spending — no debt added ✓</div>';
+  html+='</div>';
+
+  // ── SPENDING BAR CHART ──
   if(recent6.length>1){
-    html+='<div class="card card-sm" style="margin-bottom:10px">'+
-      '<div class="shd" style="margin-top:0;margin-bottom:12px">Spending vs Payments</div>'+
-      '<div class="mbars">'+bars+'</div>'+
-      '<div style="display:flex">'+barLabels+'</div>'+
-      '<div style="display:flex;gap:14px;margin-top:10px">'+
-        '<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:8px;height:8px;border-radius:2px;background:rgba(248,113,113,.55)"></div>Spent</div>'+
-        '<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:8px;height:8px;border-radius:2px;background:rgba(52,211,153,.65)"></div>Paid</div>'+
-      '</div>'+
-      (trendMsg?'<div style="margin-top:10px;font-size:12px;color:'+trendColor+';text-align:center">'+trendMsg+'</div>':'')+
-      '</div>';
+    const maxV=Math.max(...recent6.map(k=>monthly[k]?.total||0),1);
+    html+='<div class="card card-sm" style="margin-bottom:10px">';
+    html+='<div class="shd" style="margin-top:0;margin-bottom:12px">Monthly Spending</div>';
+    html+='<div style="display:flex;align-items:flex-end;gap:4px;height:72px;margin-bottom:6px">';
+    recent6.forEach(k=>{
+      const m=monthly[k]||{total:0,credit:0,cash:0};
+      const totalH=Math.max(2,Math.round((m.total/maxV)*68));
+      const cashH=Math.max(0,Math.round((m.cash/m.total)*totalH)||0);
+      const creditH=totalH-cashH;
+      html+='<div style="flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:0">';
+      if(creditH>0)html+='<div style="height:'+creditH+'px;background:rgba(248,113,113,.65);border-radius:2px 2px 0 0"></div>';
+      if(cashH>0)html+='<div style="height:'+cashH+'px;background:rgba(96,165,250,.6)"></div>';
+      html+='</div>';
+    });
+    html+='</div>';
+    html+='<div style="display:flex;gap:4px;margin-bottom:10px">';
+    recent6.forEach(k=>{html+='<div style="flex:1;font-size:9px;color:var(--text3);text-align:center;font-family:JetBrains Mono,monospace">'+(monthly[k]?.label||k.slice(5))+'</div>';});
+    html+='</div>';
+    html+='<div style="display:flex;gap:14px">';
+    html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(248,113,113,.65)"></div>Credit (adds debt)</div>';
+    html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(96,165,250,.6)"></div>Cash/Debit</div>';
+    html+='</div>';
+    if(trendMsg)html+='<div style="margin-top:10px;font-size:12px;color:'+trendColor+';text-align:center;font-weight:500">'+trendMsg+'</div>';
+    html+='</div>';
   }
 
-  // averages
-  html+='<div class="sg sg2" style="margin-bottom:10px">'+
-    '<div class="sbox"><div class="slabel">Avg Spent / Mo</div><div class="sval amber">$'+Math.round(avgSpent).toLocaleString()+'</div></div>'+
-    '<div class="sbox"><div class="slabel">Net Avg / Mo</div><div class="sval '+(netMo>=0?'green':'red')+'">'+(netMo>=0?'+':'-')+'$'+Math.round(Math.abs(netMo)).toLocaleString()+'</div><div class="ssub">'+(netMo>=0?'reducing debt':'growing debt')+'</div></div></div>';
-
-  // categories
+  // ── CATEGORY BREAKDOWN ──
   if(topCats.length){
     const catTotal=topCats.reduce((s,[,v])=>s+v,0);
-    html+='<div class="card card-sm" style="margin-bottom:10px"><div class="shd" style="margin-top:0">This Month by Category</div>';
+    html+='<div class="card card-sm" style="margin-bottom:10px">';
+    html+='<div class="shd" style="margin-top:0">'+thisMonthName+' by Category</div>';
     topCats.forEach(([cat,amt])=>{
-      const pct=catTotal>0?(amt/catTotal*100).toFixed(0):0;
-      html+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'+
-        '<span style="font-size:16px">'+(CE[cat]||'📦')+'</span>'+
-        '<div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
-          '<span style="font-size:13px;font-weight:500">'+(CL[cat]||cat)+'</span>'+
-          '<span style="font-family:JetBrains Mono,monospace;font-size:13px;color:var(--red)">$'+Math.round(amt).toLocaleString()+'</span></div>'+
-          '<div style="height:3px;background:var(--surface);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:var(--accent);border-radius:99px"></div></div></div>'+
-        '<span style="font-size:11px;color:var(--text3);width:28px;text-align:right">'+pct+'%</span></div>';
+      const pct=catTotal>0?Math.round(amt/catTotal*100):0;
+      // How much of this category is credit vs cash
+      const catCreditAmt=charges.filter(tx=>{
+        const d=parseLD(tx.date);if(!d)return false;
+        const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+        return key===thisKey&&(tx.category||'other')===cat&&tx.debtName!=='Cash/Debit';
+      }).reduce((s,tx)=>s+tx.amount,0);
+      const catCashAmt=amt-catCreditAmt;
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">';
+      html+='<span style="font-size:18px;flex-shrink:0">'+(CE[cat]||'📦')+'</span>';
+      html+='<div style="flex:1">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">';
+      html+='<span style="font-size:13px;font-weight:600">'+(CL[cat]||cat)+'</span>';
+      html+='<span style="font-family:JetBrains Mono,monospace;font-size:13px;color:var(--text)">$'+Math.round(amt).toLocaleString()+'</span>';
+      html+='</div>';
+      // Stacked bar: credit (red) + cash (blue)
+      html+='<div style="height:4px;background:var(--surface);border-radius:99px;overflow:hidden;display:flex">';
+      if(catCreditAmt>0)html+='<div style="width:'+Math.round(catCreditAmt/catTotal*100)+'%;background:rgba(248,113,113,.7);border-radius:99px 0 0 99px"></div>';
+      if(catCashAmt>0)html+='<div style="width:'+Math.round(catCashAmt/catTotal*100)+'%;background:rgba(96,165,250,.7)"></div>';
+      html+='</div>';
+      html+='</div>';
+      html+='<span style="font-size:11px;color:var(--text3);width:28px;text-align:right;flex-shrink:0">'+pct+'%</span>';
+      html+='</div>';
     });
     html+='</div>';
   }
 
-  // insights
-  const monthlyInt=debts.reduce((s,d)=>s+(d.balance*d.rate/100/12),0);
-  const totalDebt=totalLiabilities();
-  const ins=[];
-  if(monthlyInt>150)ins.push({type:'bad',emoji:'🔥',title:'$'+monthlyInt.toFixed(0)+'/mo going to interest',text:'That\'s $'+Math.round(monthlyInt*12).toLocaleString()+'/year reducing your balance by zero. Every extra payment cuts this directly.'});
-  if(netMo<0)ins.push({type:'bad',emoji:'📈',title:'Debt is growing on average',text:'Spending ~$'+Math.round(Math.abs(netMo))+'/mo more than paying. Closing this gap is the most impactful move.'});
-  else if(netMo>0)ins.push({type:'good',emoji:'📉',title:'Reducing debt ~$'+Math.round(netMo)+'/mo average',text:'Good trajectory. Even small extra payments compound significantly over time.'});
-  if(topCats.length&&avgSpent>0&&topCats[0][1]>avgSpent*0.35)ins.push({type:'warn',emoji:'💡',title:(CL[topCats[0][0]]||topCats[0][0])+' is '+Math.round(topCats[0][1]/avgSpent*100)+'% of spending',text:'$'+Math.round(topCats[0][1])+' this month in '+((CL[topCats[0][0]])||topCats[0][0]).toLowerCase()+'. Worth reviewing if there\'s room to trim.'});
-  if(totalDebt>0&&netMo>0){const mo=Math.ceil(totalDebt/netMo);if(mo<120){const d=new Date();d.setMonth(d.getMonth()+mo);ins.push({type:'info',emoji:'🗓️',title:'Debt-free by '+d.toLocaleDateString('en-US',{month:'short',year:'numeric'}),text:mo+' months at your current net paydown of $'+Math.round(netMo)+'/mo.'});}}
-  if(ins.length){html+='<div class="shd">Insights</div>';ins.forEach(i=>{html+='<div class="irow '+i.type+'"><div class="iemoji">'+i.emoji+'</div><div><div class="ititle">'+i.title+'</div><div class="itext">'+i.text+'</div></div></div>';});}
-
-  // month table
-  if(allMonths.length>1){
-    html+='<div class="card card-sm" style="margin-bottom:10px"><div class="shd" style="margin-top:0">Month by Month</div>';
-    [...allMonths].reverse().slice(0,6).forEach(k=>{
-      const[y,m]=k.split('-');
-      const label=new Date(parseInt(y),parseInt(m)-1,1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
-      const net=monthly[k].paid-monthly[k].spent;
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">'+
-        '<span style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--text2);width:48px;flex-shrink:0">'+label+'</span>'+
-        '<span style="font-size:12px;color:var(--red)">−$'+Math.round(monthly[k].spent).toLocaleString()+'</span>'+
-        '<span style="font-size:12px;color:var(--green)">+$'+Math.round(monthly[k].paid).toLocaleString()+'</span>'+
-        '<span style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:600;color:'+(net>=0?'var(--green)':'var(--red)')+'">'+( net>=0?'↓':'↑')+'$'+Math.round(Math.abs(net)).toLocaleString()+'</span></div>';
+  // ── MONTH TABLE ──
+  if(allKeys.length>1){
+    html+='<div class="card card-sm" style="margin-bottom:10px">';
+    html+='<div class="shd" style="margin-top:0">Month by Month</div>';
+    html+='<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);padding-bottom:6px;border-bottom:1px solid var(--border);font-weight:600;letter-spacing:.5px">'+
+      '<span>MONTH</span><span>CREDIT</span><span>CASH</span><span>TOTAL</span></div>';
+    [...allKeys].reverse().slice(0,6).forEach(k=>{
+      const m=monthly[k];
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">';
+      html+='<span style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--text2);width:52px;flex-shrink:0">'+m.label+'</span>';
+      html+='<span style="font-size:12px;color:var(--red)">$'+Math.round(m.credit).toLocaleString()+'</span>';
+      html+='<span style="font-size:12px;color:var(--blue)">$'+Math.round(m.cash).toLocaleString()+'</span>';
+      html+='<span style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:600;color:var(--text)">$'+Math.round(m.total).toLocaleString()+'</span>';
+      html+='</div>';
     });
     html+='</div>';
   }
+
   el.innerHTML=html;
 }
+
 
 // ── PLAN ──
 function simPayoff(extra,strategy){
@@ -1044,117 +1082,167 @@ function exportMonthCSV(){
 // ══════════════════════════════════════════════
 function renderTrends(){
   const el=document.getElementById('trends-out');
-  if(!el){console.error('trends-out not found');return;}
+  if(!el)return;
+  if(!debts.length&&!history.length){
+    el.innerHTML='<div class="es"><div class="es-icon">📉</div><p>No data yet.</p></div>';return;
+  }
 
-  // Build monthly data from history
+  const now=new Date();
+  const thisKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const totalNow=debts.reduce((s,d)=>s+d.balance,0);
+  const monthlyInt=debts.reduce((s,d)=>s+(d.balance*d.rate/100/12),0);
+  const totalLimit=debts.reduce((s,d)=>s+(d.originalBalance||d.balance),0);
+  const totalPaidEver=debts.reduce((s,d)=>s+d.paid,0);
+
+  // Monthly debt payment buckets (payments only — not spending)
   const monthly={};
-  (history||[]).forEach(tx=>{
-    try{
-      const d=parseLD(tx.date);
-      if(!d||isNaN(d.getTime()))return;
-      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-      const label=d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
-      if(!monthly[key])monthly[key]={key,label,spent:0,paid:0,income:0};
-      if(tx.type==='charge')monthly[key].spent+=tx.amount;
-      else if(tx.type==='payment')monthly[key].paid+=tx.amount;
-      else if(tx.type==='income')monthly[key].income+=tx.amount;
-    }catch(e){}
+  history.filter(h=>h.type==='payment').forEach(tx=>{
+    const d=parseLD(tx.date);if(!d||isNaN(d.getTime()))return;
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const label=d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+    if(!monthly[key])monthly[key]={key,label,paid:0};
+    monthly[key].paid+=tx.amount;
+  });
+  // Also track credit card spending per month (adds to debt)
+  history.filter(h=>h.type==='charge'&&h.debtName!=='Cash/Debit').forEach(tx=>{
+    const d=parseLD(tx.date);if(!d||isNaN(d.getTime()))return;
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const label=d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+    if(!monthly[key])monthly[key]={key,label,paid:0};
+    monthly[key].creditSpent=(monthly[key].creditSpent||0)+tx.amount;
   });
 
   const keys=Object.keys(monthly).sort();
-  const now=new Date();
-  const thisKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  const totalNow=debts.reduce((s,d)=>s+(d.balance||0),0);
-  const monthlyInt=debts.reduce((s,d)=>s+(d.balance*d.rate/100/12),0);
+  const thisM=monthly[thisKey]||{paid:0,creditSpent:0};
+  const thisNet=thisM.paid-(thisM.creditSpent||0);
 
   // 3-month average net
   const last3=keys.slice(-3).map(k=>monthly[k]);
-  const avgNet=last3.length?last3.reduce((s,m)=>s+(m.paid-m.spent),0)/last3.length:0;
-  const thisM=monthly[thisKey]||{spent:0,paid:0,income:0};
-  const thisNet=thisM.paid-thisM.spent;
+  const avgNet=last3.length?last3.reduce((s,m)=>s+(m.paid-(m.creditSpent||0)),0)/last3.length:0;
+  const monthsToFree=avgNet>0?Math.ceil(totalNow/avgNet):null;
+
+  // Utilization
+  const knownLimits=debts.filter(d=>d.originalBalance>0);
+  const totalKnownBal=knownLimits.reduce((s,d)=>s+d.balance,0);
+  const totalKnownLimit=knownLimits.reduce((s,d)=>s+d.originalBalance,0);
+  const utilPct=totalKnownLimit>0?Math.round(totalKnownBal/totalKnownLimit*100):0;
+  const utilColor=utilPct<30?'var(--green)':utilPct<50?'var(--amber)':'var(--red)';
 
   let html='';
 
-  // ── SCORECARD ──
-  html+='<div class="shd" style="margin-top:0">Scorecard</div>';
-  html+='<div class="sg sg2" style="margin-bottom:10px">';
-  html+='<div class="sbox"><div class="slabel">Total Debt</div><div class="sval red">$'+Math.round(totalNow).toLocaleString()+'</div></div>';
-  html+='<div class="sbox"><div class="slabel">Interest/Mo</div><div class="sval amber">$'+Math.round(monthlyInt)+'</div></div>';
-  html+='<div class="sbox"><div class="slabel">This Month Net</div><div class="sval '+(thisNet>=0?'green':'red')+'">'+(thisNet>=0?'+':'')+Math.round(thisNet).toLocaleString()+'</div></div>';
-  html+='<div class="sbox"><div class="slabel">3-Mo Avg Net</div><div class="sval '+(avgNet>=0?'green':'red')+'">'+(avgNet>=0?'+':'')+Math.round(avgNet)+'/mo</div></div>';
+  // ── DEBT SCORECARD ──
+  html+='<div class="shd" style="margin-top:0">Debt Snapshot</div>';
+  html+='<div class="sg sg2" style="margin-bottom:4px">';
+  html+='<div class="sbox"><div class="slabel">Total Debt</div><div class="sval red">$'+Math.round(totalNow).toLocaleString()+'</div><div class="ssub">across '+debts.length+' cards</div></div>';
+  html+='<div class="sbox"><div class="slabel">Interest / Mo</div><div class="sval amber">$'+Math.round(monthlyInt)+'</div><div class="ssub">$'+Math.round(monthlyInt*12).toLocaleString()+'/year</div></div>';
+  html+='<div class="sbox"><div class="slabel">Total Paid</div><div class="sval green">$'+Math.round(totalPaidEver).toLocaleString()+'</div><div class="ssub">since tracking</div></div>';
+  html+='<div class="sbox"><div class="slabel">This Month Net</div><div class="sval '+(thisNet>=0?'green':'red')+'">'+(thisNet>=0?'↓':'↑')+'$'+Math.round(Math.abs(thisNet)).toLocaleString()+'</div><div class="ssub">'+(thisNet>=0?'debt dropping':'debt growing')+'</div></div>';
   html+='</div>';
 
-  // ── MONTH BY MONTH TABLE ──
-  if(keys.length){
-    const maxSpent=Math.max(...keys.map(k=>monthly[k].spent),1);
-    const maxPaid=Math.max(...keys.map(k=>monthly[k].paid),1);
-    const maxVal=Math.max(maxSpent,maxPaid,1);
+  // Debt-free estimate
+  if(monthsToFree&&monthsToFree<240){
+    const freeDate=new Date(now.getFullYear(),now.getMonth()+monthsToFree,1);
+    html+='<div style="padding:12px 16px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:var(--r2);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">';
+    html+='<div><div style="font-size:11px;color:var(--green);font-weight:600;letter-spacing:1px;text-transform:uppercase">Debt-Free Estimate</div>';
+    html+='<div style="font-size:20px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--text);margin-top:2px">'+freeDate.toLocaleDateString('en-US',{month:'long',year:'numeric'})+'</div></div>';
+    html+='<div style="text-align:right"><div style="font-size:22px;font-weight:700;color:var(--green)">'+monthsToFree+'</div><div style="font-size:11px;color:var(--text3)">months</div></div>';
+    html+='</div>';
+  } else if(avgNet<=0){
+    html+='<div style="padding:12px 16px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:var(--r2);margin-bottom:10px">';
+    html+='<div style="font-size:13px;font-weight:600;color:var(--red)">Debt is growing</div>';
+    html+='<div style="font-size:12px;color:var(--text2);margin-top:4px">Payments need to exceed credit card spending to start reducing debt.</div>';
+    html+='</div>';
+  }
 
-    html+='<div class="shd">Month by Month</div>';
+  // ── UTILIZATION ──
+  html+='<div class="card card-sm" style="margin-bottom:10px">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">';
+  html+='<div class="shd" style="margin:0">Credit Utilization</div>';
+  html+='<div style="font-family:JetBrains Mono,monospace;font-size:22px;font-weight:700;color:'+utilColor+'">'+utilPct+'%</div>';
+  html+='</div>';
+  html+='<div style="height:8px;background:var(--surface);border-radius:99px;overflow:hidden;margin-bottom:8px">';
+  html+='<div style="height:100%;width:'+Math.min(utilPct,100)+'%;background:'+utilColor+';border-radius:99px;transition:width .8s"></div></div>';
+  html+='<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">';
+  html+='<span>0%</span><span style="color:var(--green)">30% target</span><span>100%</span></div>';
+  html+='<div style="margin-top:10px;font-size:12px;color:var(--text2)">Target: get below <strong style="color:var(--green)">30%</strong> for score improvement. You need to pay down <strong style="color:var(--text)">$'+Math.round(Math.max(0,totalKnownBal-totalKnownLimit*0.3)).toLocaleString()+'</strong> to get there.</div>';
+  html+='</div>';
+
+  // ── PER-CARD PROGRESS ──
+  html+='<div class="shd">Per-Card Debt Progress</div>';
+  const sortedDebts=[...debts].sort((a,b)=>b.balance-a.balance);
+  sortedDebts.forEach(d=>{
+    const limit=d.originalBalance||d.balance;
+    const util=limit>0?Math.round(d.balance/limit*100):0;
+    const utilC=util<30?'var(--green)':util<50?'var(--amber)':'var(--red)';
+    const intMo=(d.balance*d.rate/100/12);
+    html+='<div class="card card-sm" style="margin-bottom:8px">';
+    // Header row
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+    html+='<div>';
+    html+='<div style="font-size:15px;font-weight:700">'+d.name+'</div>';
+    html+='<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(d.rate===0?'0% APR':d.rate+'% APR · $'+intMo.toFixed(0)+'/mo interest')+'</div>';
+    html+='</div>';
+    html+='<div style="text-align:right">';
+    html+='<div style="font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;color:var(--red)">$'+Math.round(d.balance).toLocaleString()+'</div>';
+    html+='<div style="font-size:11px;color:'+utilC+';font-weight:600">'+util+'% utilized</div>';
+    html+='</div></div>';
+    // Balance bar (how much of limit is used)
+    html+='<div style="height:6px;background:var(--surface);border-radius:99px;overflow:hidden;margin-bottom:6px">';
+    html+='<div style="height:100%;width:'+Math.min(util,100)+'%;background:'+utilC+';border-radius:99px"></div></div>';
+    // Stats row
+    html+='<div style="display:flex;gap:12px;flex-wrap:wrap">';
+    html+='<div style="font-size:11px;color:var(--text3)">Balance <strong style="color:var(--text)">$'+Math.round(d.balance).toLocaleString()+'</strong></div>';
+    if(limit>d.balance)html+='<div style="font-size:11px;color:var(--text3)">Available <strong style="color:var(--green)">$'+Math.round(limit-d.balance).toLocaleString()+'</strong></div>';
+    html+='<div style="font-size:11px;color:var(--text3)">Paid <strong style="color:var(--text)">$'+Math.round(d.paid).toLocaleString()+'</strong></div>';
+    html+='</div>';
+    // How much to get to 30% util
+    const toThirty=Math.max(0,d.balance-limit*0.3);
+    if(toThirty>0)html+='<div style="margin-top:8px;font-size:11px;color:var(--text3);padding:6px 8px;background:var(--surface);border-radius:6px">Pay <strong style="color:var(--text)">$'+Math.round(toThirty).toLocaleString()+'</strong> to reach 30% utilization</div>';
+    html+='</div>';
+  });
+
+  // ── MONTHLY PAYMENT HISTORY ──
+  if(keys.length>0){
+    html+='<div class="shd">Monthly Payments vs Credit Spending</div>';
     html+='<div class="card card-sm" style="margin-bottom:10px">';
-
-    // Bar chart using CSS
-    html+='<div style="display:flex;align-items:flex-end;gap:4px;height:80px;margin-bottom:8px;padding:0 2px">';
-    keys.slice(-8).forEach(k=>{
+    const maxV=Math.max(...keys.map(k=>Math.max(monthly[k].paid,monthly[k].creditSpent||0)),1);
+    // Bars
+    const recent8=keys.slice(-8);
+    html+='<div style="display:flex;align-items:flex-end;gap:4px;height:72px;margin-bottom:6px">';
+    recent8.forEach(k=>{
       const m=monthly[k];
-      const spentH=Math.max(2,Math.round((m.spent/maxVal)*72));
-      const paidH=Math.max(2,Math.round((m.paid/maxVal)*72));
-      html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0;justify-content:flex-end">';
-      html+='<div style="width:100%;display:flex;gap:1px;align-items:flex-end;justify-content:center">';
-      html+='<div style="flex:1;height:'+spentH+'px;background:rgba(248,113,113,.65);border-radius:2px 2px 0 0"></div>';
-      html+='<div style="flex:1;height:'+paidH+'px;background:rgba(52,211,153,.7);border-radius:2px 2px 0 0"></div>';
-      html+='</div></div>';
+      const pH=Math.max(2,Math.round((m.paid/maxV)*68));
+      const sH=Math.max(2,Math.round(((m.creditSpent||0)/maxV)*68));
+      html+='<div style="flex:1;display:flex;gap:1px;align-items:flex-end;justify-content:center">';
+      html+='<div style="flex:1;height:'+pH+'px;background:rgba(52,211,153,.7);border-radius:2px 2px 0 0" title="Paid $'+Math.round(m.paid)+'"></div>';
+      html+='<div style="flex:1;height:'+sH+'px;background:rgba(248,113,113,.55);border-radius:2px 2px 0 0" title="Credit spent $'+Math.round(m.creditSpent||0)+'"></div>';
+      html+='</div>';
     });
     html+='</div>';
-
-    // Labels
-    html+='<div style="display:flex;gap:4px;margin-bottom:12px">';
-    keys.slice(-8).forEach(k=>{
-      html+='<div style="flex:1;font-size:9px;color:var(--text3);text-align:center;font-family:JetBrains Mono,monospace">'+monthly[k].label+'</div>';
-    });
+    html+='<div style="display:flex;gap:4px;margin-bottom:10px">';
+    recent8.forEach(k=>{html+='<div style="flex:1;font-size:9px;color:var(--text3);text-align:center;font-family:JetBrains Mono,monospace">'+(monthly[k]?.label||k.slice(5))+'</div>';});
     html+='</div>';
-
-    // Legend
-    html+='<div style="display:flex;gap:14px;margin-bottom:14px">';
-    html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(248,113,113,.65)"></div>Spent</div>';
+    html+='<div style="display:flex;gap:14px;margin-bottom:12px">';
     html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(52,211,153,.7)"></div>Payments</div>';
+    html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(248,113,113,.55)"></div>Credit Spending</div>';
     html+='</div>';
-
-    // Row table
-    [...keys].reverse().forEach(k=>{
+    // Table
+    [...keys].reverse().slice(0,6).forEach(k=>{
       const m=monthly[k];
-      const net=m.paid-m.spent;
+      const net=m.paid-(m.creditSpent||0);
       html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--border)">';
       html+='<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--text2);width:52px;flex-shrink:0">'+m.label+'</div>';
-      html+='<div style="font-size:12px;color:var(--red)">−$'+Math.round(m.spent).toLocaleString()+'</div>';
-      html+='<div style="font-size:12px;color:var(--green)">+$'+Math.round(m.paid).toLocaleString()+'</div>';
+      html+='<div style="font-size:12px;color:var(--green)">+$'+Math.round(m.paid).toLocaleString()+' paid</div>';
+      html+='<div style="font-size:12px;color:var(--red)">−$'+Math.round(m.creditSpent||0).toLocaleString()+' spent</div>';
       html+='<div style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:700;color:'+(net>=0?'var(--green)':'var(--red)')+'">'+( net>=0?'↓':'↑')+'$'+Math.round(Math.abs(net)).toLocaleString()+'</div>';
       html+='</div>';
     });
     html+='</div>';
   }
 
-  // ── PER CARD ──
-  html+='<div class="shd">Cards</div>';
-  debts.forEach(d=>{
-    const pct=Math.min(100,d.originalBalance>0?Math.round((d.paid/d.originalBalance)*100):0);
-    const intMo=(d.balance*d.rate/100/12);
-    const barColor=d.rate===0?'var(--blue)':d.rate<10?'var(--green)':d.rate<20?'var(--amber)':'var(--red)';
-    html+='<div class="card card-sm" style="margin-bottom:8px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
-    html+='<div><div style="font-size:15px;font-weight:700">'+d.name+'</div>';
-    html+='<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(d.rate===0?'0% APR — free to carry':d.rate+'% APR · $'+intMo.toFixed(0)+'/mo interest')+'</div></div>';
-    html+='<div style="font-family:JetBrains Mono,monospace;font-size:20px;font-weight:700;color:var(--red)">$'+Math.round(d.balance).toLocaleString()+'</div>';
-    html+='</div>';
-    html+='<div style="height:5px;background:var(--surface);border-radius:99px;overflow:hidden;margin-bottom:6px">';
-    html+='<div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:99px"></div></div>';
-    html+='<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">';
-    html+='<span>'+pct+'% paid off</span><span>$'+Math.round(d.paid).toLocaleString()+' paid total</span></div>';
-    html+='</div>';
-  });
-
   el.innerHTML=html;
 }
+
 // ── DIAGNOSTIC: call checkDB() in browser console to see what's in Supabase ──
 async function checkDB(){
   const p=await sb.from('payments').select('*').limit(5);
