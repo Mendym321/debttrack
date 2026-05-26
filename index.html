@@ -310,12 +310,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="fg"><div class="flabel">Name</div><input type="text" id="ed-name"></div>
     <div class="fr">
       <div class="fg"><div class="flabel">Balance ($)</div><input type="number" id="ed-bal" min="0"></div>
-      <div class="fg"><div class="flabel">APR (%)</div><input type="number" id="ed-rate" step="0.1" min="0"></div>
+      <div class="fg"><div class="flabel">Credit Limit ($)</div><input type="number" id="ed-limit" min="0" placeholder="e.g. 5000"></div>
     </div>
     <div class="fr">
+      <div class="fg"><div class="flabel">APR (%)</div><input type="number" id="ed-rate" step="0.1" min="0"></div>
       <div class="fg"><div class="flabel">Min Payment ($)</div><input type="number" id="ed-min" min="0"></div>
-      <div class="fg"><div class="flabel">Due Day</div><input type="number" id="ed-due" min="1" max="28"></div>
     </div>
+    <div class="fg"><div class="flabel">Due Day (1–28)</div><input type="number" id="ed-due" min="1" max="28"></div>
     <div class="ma"><button class="btn btn-full" onclick="saveEditDebt()">Save</button><button class="btn btn-ghost" onclick="closeModal('modal-edit-debt')">Cancel</button></div>
   </div>
 </div>
@@ -349,7 +350,7 @@ async function dbAddDebt(d){
   if(error){toast('Error saving',true);return null;}
   return{...d,id:data.id};
 }
-async function dbUpdateDebt(d){await sb.from('debts').update({name:d.name,type:d.type,balance:d.balance,rate:d.rate,min:d.min,due:d.due,paid:d.paid}).eq('id',d.id);}
+async function dbUpdateDebt(d){await sb.from('debts').update({name:d.name,type:d.type,balance:d.balance,original_balance:d.originalBalance,rate:d.rate,min:d.min,due:d.due,paid:d.paid}).eq('id',d.id);}
 async function dbDeleteDebt(id){await sb.from('debts').delete().eq('id',id);}
 async function dbLoadHistory(){
   const{data,error}=await sb.from('payments').select('*').order('created_at',{ascending:false}).limit(300);
@@ -678,19 +679,29 @@ async function confirmPayment(){
 }
 function openEdit(id){
   editingId=id;const d=debts.find(x=>x.id===id);
-  document.getElementById('ed-name').value=d.name;document.getElementById('ed-bal').value=d.balance;
-  document.getElementById('ed-rate').value=d.rate;document.getElementById('ed-min').value=d.min;document.getElementById('ed-due').value=d.due;
+  document.getElementById('ed-name').value=d.name;
+  document.getElementById('ed-bal').value=d.balance;
+  document.getElementById('ed-limit').value=d.originalBalance||'';
+  document.getElementById('ed-rate').value=d.rate;
+  document.getElementById('ed-min').value=d.min;
+  document.getElementById('ed-due').value=d.due;
   openModal('modal-edit-debt');
 }
 async function saveEditDebt(){
   const name=document.getElementById('ed-name').value.trim();
   const bal=parseFloat(document.getElementById('ed-bal').value);
+  const limit=parseFloat(document.getElementById('ed-limit').value)||0;
   const rate=parseFloat(document.getElementById('ed-rate').value);
   const min=parseFloat(document.getElementById('ed-min').value);
   const due=parseInt(document.getElementById('ed-due').value)||1;
   if(!name||isNaN(bal)||isNaN(rate)||isNaN(min)){toast('Fill in all fields',true);return;}
-  const d=debts.find(x=>x.id===editingId);Object.assign(d,{name,balance:bal,rate,min,due});
-  await dbUpdateDebt(d);closeModal('modal-edit-debt');renderDebts();toast('Updated!');
+  const d=debts.find(x=>x.id===editingId);
+  Object.assign(d,{name,balance:bal,originalBalance:limit||d.originalBalance,rate,min,due});
+  await dbUpdateDebt(d);
+  closeModal('modal-edit-debt');
+  renderDebts();
+  if(document.getElementById('pane-trends').style.display!=='none')renderTrends();
+  toast('Updated!');
 }
 async function addDebt(){
   const name=document.getElementById('nd-name').value.trim();
