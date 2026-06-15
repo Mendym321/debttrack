@@ -321,6 +321,32 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 </div>
 
+
+<div class="mo" id="modal-edit-tx">
+  <div class="md"><div class="mh"></div>
+    <h3>Edit Transaction</h3>
+    <div class="fg"><div class="flabel">Date</div><input type="date" id="etx-date"></div>
+    <div class="fg"><div class="flabel">Amount ($)</div><input type="number" id="etx-amount" min="0" step="0.01" style="font-family:JetBrains Mono,monospace;font-size:20px;font-weight:600"></div>
+    <div class="fg"><div class="flabel">Category</div>
+      <select id="etx-cat">
+        <option value="groceries">🛒 Groceries</option>
+        <option value="dining">🍽️ Dining</option>
+        <option value="transport">🚗 Transport</option>
+        <option value="shopping">🛍️ Shopping</option>
+        <option value="health">💊 Health</option>
+        <option value="kids">👶 Kids</option>
+        <option value="utilities">💡 Utilities</option>
+        <option value="subscriptions">📱 Subscriptions</option>
+        <option value="entertainment">🎬 Entertainment</option>
+        <option value="other">📦 Other</option>
+        <option value="payment">💳 Payment</option>
+      </select>
+    </div>
+    <div class="fg"><div class="flabel">Note</div><input type="text" id="etx-note" placeholder="Optional note"></div>
+    <div class="ma"><button class="btn btn-full" onclick="saveEditTx()">Save Changes</button><button class="btn btn-ghost" onclick="closeModal('modal-edit-tx')">Cancel</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 const SB_URL='https://zsaokuspdzooaihqpuod.supabase.co';
@@ -533,6 +559,72 @@ async function logExpense(){
   toast('$'+amount.toFixed(2)+' logged');
 }
 
+
+let editingTxId=null;
+function openEditTx(btn){
+  const id=btn.dataset.id;
+  const tx=history.find(h=>h.id===id);
+  if(!tx)return;
+  editingTxId=id;
+  // Convert stored date string to YYYY-MM-DD for date input
+  const d=parseLD(tx.date);
+  const dateVal=d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';
+  document.getElementById('etx-date').value=dateVal;
+  document.getElementById('etx-amount').value=tx.amount;
+  document.getElementById('etx-cat').value=tx.category||'other';
+  document.getElementById('etx-note').value=tx.note||'';
+  openModal('modal-edit-tx');
+}
+
+async function saveEditTx(){
+  const tx=history.find(h=>h.id===editingTxId);
+  if(!tx){toast('Transaction not found',true);return;}
+
+  const dateRaw=document.getElementById('etx-date').value;
+  const amount=parseFloat(document.getElementById('etx-amount').value);
+  const cat=document.getElementById('etx-cat').value;
+  const note=document.getElementById('etx-note').value.trim();
+
+  if(!dateRaw||!amount||amount<=0){toast('Fill in date and amount',true);return;}
+
+  // Format date back to display format
+  const[y,mo,day]=dateRaw.split('-');
+  const dateObj=new Date(parseInt(y),parseInt(mo)-1,parseInt(day));
+  const dateStr=dateObj.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+
+  // If it's a credit card charge and amount changed, adjust card balance
+  if(tx.type==='charge'&&tx.debtName!=='Cash/Debit'){
+    const d=debts.find(x=>x.name===tx.debtName);
+    if(d&&amount!==tx.amount){
+      const diff=amount-tx.amount;// positive = new amount bigger
+      d.balance=Math.max(0,parseFloat((d.balance+diff).toFixed(2)));
+      await dbUpdateDebt(d);
+    }
+  }
+
+  // Update in Supabase
+  const{error}=await sb.from('payments').update({
+    date:dateStr,
+    amount:amount,
+    category:cat,
+    note:note
+  }).eq('id',editingTxId);
+
+  if(error){toast('Error saving: '+error.message,true);return;}
+
+  // Update in memory
+  tx.date=dateStr;
+  tx.amount=amount;
+  tx.category=cat;
+  tx.note=note;
+
+  closeModal('modal-edit-tx');
+  renderRecentTx();
+  renderDebts();
+  renderAnalytics();
+  renderTrends();
+  toast('Transaction updated');
+}
 function deleteTxFromBtn(btn){
   const id=btn.dataset.id;
   const debtName=btn.dataset.name;
@@ -581,6 +673,7 @@ function renderRecentTx(){
       '</div>'+
       '<div style="display:flex;align-items:center;gap:8px">'+
         '<div class="tx-amt '+amtClass+'">'+sign+'$'+tx.amount.toFixed(2)+'</div>'+
+        (canDelete?'<button class="tx-edit" data-id="'+tx.id+'" onclick="openEditTx(this)" title="Edit" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:4px 6px;border-radius:6px;transition:all .15s">✎</button>':'')+
         (canDelete?'<button class="tx-del" data-id="'+tx.id+'" data-name="'+tx.debtName+'" data-amt="'+tx.amount+'" data-type="'+tx.type+'" onclick="deleteTxFromBtn(this)" title="Delete">✕</button>':'')+
       '</div>'+
     '</div>';
@@ -1165,118 +1258,119 @@ function renderTrends(){
     html+='</div>';
   }
 
-  // ── DEBT TRAJECTORY CHART ──
-  // Reconstruct running total debt per month by working backward from today
-  // Start at totalNow and apply net changes in reverse
-  const debtByMonth={};
-  debtByMonth[thisKey]=totalNow;
-  const sortedKeys=[...keys].sort();
-  // Walk backward from most recent month to earliest
-  // Each month: debtPrev = debtCurrent - payments + creditSpent
-  for(let i=sortedKeys.length-1;i>=0;i--){
-    const k=sortedKeys[i];
-    const m=monthly[k]||{paid:0,creditSpent:0};
-    const net=m.paid-(m.creditSpent||0);
-    // previous month's end balance = this month's start = this month's end - net change
-    if(i>0){
-      const prevKey=sortedKeys[i-1];
-      const thisBalance=debtByMonth[k]||totalNow;
-      debtByMonth[prevKey]=Math.max(0,thisBalance+net);
-    }
-  }
-  // Ensure current month is always totalNow
-  debtByMonth[thisKey]=totalNow;
+  // ── DEBT TRAJECTORY CHART (transaction-level) ──
+  // Build a running balance timeline from every credit charge + payment
+  // Start from today's known total and work backward
+  const txEvents=history
+    .filter(h=>h.type==='payment'||(h.type==='charge'&&h.debtName!=='Cash/Debit'))
+    .map(h=>({date:parseLD(h.date),amount:h.amount,type:h.type,name:h.debtName}))
+    .filter(h=>h.date&&!isNaN(h.date.getTime()))
+    .sort((a,b)=>a.date-b.date);
 
-  const chartKeys=Object.keys(debtByMonth).sort();
-  const chartVals=chartKeys.map(k=>debtByMonth[k]);
-  const maxD=Math.max(...chartVals,totalNow,1);
-  const minD=Math.max(0,Math.min(...chartVals)*0.85);
-  const range=maxD-minD||1;
+  if(txEvents.length>=2){
+    // Reconstruct running total: start from current total, walk backward
+    let running=totalNow;
+    const points=[{date:new Date(),val:totalNow}];
+    const sorted=[...txEvents].reverse();
+    sorted.forEach(tx=>{
+      if(tx.type==='payment') running+=tx.amount;// undo payment = balance was higher
+      else running-=tx.amount;// undo charge = balance was lower
+      running=Math.max(0,running);
+      points.unshift({date:tx.date,val:running});
+    });
 
-  if(chartKeys.length>=2){
+    // Deduplicate same-day points — keep last value for each day
+    const dayMap={};
+    points.forEach(p=>{
+      const k=p.date.toISOString().split('T')[0];
+      dayMap[k]=p;
+    });
+    const finalPts=Object.values(dayMap).sort((a,b)=>a.date-b.date);
+    // Always include today
+    const todayKey=new Date().toISOString().split('T')[0];
+    if(!dayMap[todayKey])finalPts.push({date:new Date(),val:totalNow});
+
+    const vals=finalPts.map(p=>p.val);
+    const maxV=Math.max(...vals)*1.05||1;
+    const minV=Math.max(0,Math.min(...vals)*0.92);
+    const range=maxV-minV||1;
+    const n=finalPts.length;
+
     const W=300,H=90,PL=40,PR=8,PT=10,PB=22;
     const cW=W-PL-PR,cH=H-PT-PB;
-    const n=chartKeys.length;
 
-    // Point coords
-    const pts=chartKeys.map((k,i)=>{
-      const x=PL+(i/(n-1))*cW;
-      const y=PT+cH*(1-(debtByMonth[k]-minD)/range);
-      return{x,y,k,v:debtByMonth[k]};
-    });
+    const px=i=>PL+(i/(n-1))*cW;
+    const py=v=>PT+cH*(1-(v-minV)/range);
 
-    // Build smooth path
-    function cx(i){return pts[i].x;}
-    function cy(i){return pts[i].y;}
-    let path='M '+cx(0)+' '+cy(0);
-    for(let i=1;i<pts.length;i++){
-      const cpx=(cx(i-1)+cx(i))/2;
-      path+=' C '+cpx+' '+cy(i-1)+' '+cpx+' '+cy(i)+' '+cx(i)+' '+cy(i);
+    // Build step line (debt changes instantaneously at each tx)
+    let path='M '+px(0)+' '+py(finalPts[0].val);
+    for(let i=1;i<n;i++){
+      // Horizontal then vertical — step chart
+      path+=' L '+px(i)+' '+py(finalPts[i-1].val);
+      path+=' L '+px(i)+' '+py(finalPts[i].val);
     }
-    const areaPath=path+' L '+cx(pts.length-1)+' '+(PT+cH)+' L '+cx(0)+' '+(PT+cH)+' Z';
 
-    // Going up or down overall?
-    const firstV=chartVals[0],lastV=chartVals[chartVals.length-1];
+    const firstV=finalPts[0].val,lastV=finalPts[n-1].val;
     const overallDown=lastV<=firstV;
-    const lineColor=overallDown?'#34d399':'#f87171';
-    const areaColor=overallDown?'rgba(52,211,153,0.12)':'rgba(248,113,113,0.12)';
+    const lineCol=overallDown?'#34d399':'#f87171';
+    const areaCol=overallDown?'rgba(52,211,153,0.1)':'rgba(248,113,113,0.1)';
 
-    // Y axis labels
-    const yLabels=[0,.25,.5,.75,1].map(p=>{
-      const val=minD+range*p;
-      const y=PT+cH*(1-p);
-      return{val,y};
-    });
+    const areaPath=path+' L '+px(n-1)+' '+(PT+cH)+' L '+px(0)+' '+(PT+cH)+' Z';
+
+    // Pick ~4 date labels spread evenly
+    const labelIdxs=[0,Math.floor(n/3),Math.floor(2*n/3),n-1].filter((v,i,a)=>a.indexOf(v)===i&&v<n);
+
+    // Y axis: 3 labels
+    const yTicks=[minV,(minV+maxV)/2,maxV];
 
     let svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;overflow:visible">';
 
-    // Grid lines
-    yLabels.forEach(({val,y})=>{
-      svg+='<line x1="'+PL+'" y1="'+y+'" x2="'+(W-PR)+'" y2="'+y+'" stroke="#2c2c3a" stroke-width="1" stroke-dasharray="3,3"/>';
-      svg+='<text x="'+(PL-4)+'" y="'+(y+4)+'" fill="#5a5a78" font-size="8" text-anchor="end" font-family="JetBrains Mono,monospace">$'+Math.round(val/1000)+'k</text>';
+    // Grid
+    yTicks.forEach(v=>{
+      const y=py(v);
+      svg+='<line x1="'+PL+'" y1="'+y+'" x2="'+(W-PR)+'" y2="'+y+'" stroke="#2c2c3a" stroke-width="1" stroke-dasharray="2,3"/>';
+      svg+='<text x="'+(PL-3)+'" y="'+(y+3)+'" fill="#5a5a78" font-size="8" text-anchor="end" font-family="JetBrains Mono,monospace">$'+Math.round(v/1000)+'k</text>';
     });
 
-    // Area fill
-    svg+='<path d="'+areaPath+'" fill="'+areaColor+'"/>';
-    // Line
-    svg+='<path d="'+path+'" fill="none" stroke="'+lineColor+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    // Area + line
+    svg+='<path d="'+areaPath+'" fill="'+areaCol+'"/>';
+    svg+='<path d="'+path+'" fill="none" stroke="'+lineCol+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
 
-    // Dots + month labels
-    pts.forEach(({x,y,k,v},i)=>{
-      // Only show label for first, last, and every other in between if space
-      const showLabel=n<=6||(i===0||i===n-1||i%2===0);
-      svg+='<circle cx="'+x+'" cy="'+y+'" r="3.5" fill="'+lineColor+'" stroke="var(--card,#1e1e27)" stroke-width="1.5"/>';
-      if(showLabel){
-        const label=monthly[k]?monthly[k].label:new Date(parseInt(k.split('-')[0]),parseInt(k.split('-')[1])-1,1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
-        svg+='<text x="'+x+'" y="'+(H-6)+'" fill="#5a5a78" font-size="8" text-anchor="middle" font-family="JetBrains Mono,monospace">'+label+'</text>';
-      }
-      // Value tooltip on first and last
+    // Event dots — payments green, charges red
+    finalPts.forEach((p,i)=>{
       if(i===0||i===n-1){
-        const anchor=i===0?'start':'end';
-        const xOff=i===0?4:-4;
-        svg+='<text x="'+(x+xOff)+'" y="'+(y-8)+'" fill="'+lineColor+'" font-size="9" text-anchor="'+anchor+'" font-family="JetBrains Mono,monospace" font-weight="600">$'+Math.round(v/1000*10)/10+'k</text>';
+        svg+='<circle cx="'+px(i)+'" cy="'+py(p.val)+'" r="3.5" fill="'+lineCol+'" stroke="#1e1e27" stroke-width="1.5"/>';
       }
     });
+
+    // Date labels
+    labelIdxs.forEach(i=>{
+      const p=finalPts[i];
+      const lbl=p.date.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      svg+='<text x="'+px(i)+'" y="'+(H-4)+'" fill="#5a5a78" font-size="8" text-anchor="middle" font-family="JetBrains Mono,monospace">'+lbl+'</text>';
+    });
+
+    // Start + end value labels
+    svg+='<text x="'+px(0)+'" y="'+(py(firstV)-6)+'" fill="'+lineCol+'" font-size="8" text-anchor="start" font-family="JetBrains Mono,monospace" font-weight="600">$'+Math.round(firstV/1000*10)/10+'k</text>';
+    svg+='<text x="'+px(n-1)+'" y="'+(py(lastV)-6)+'" fill="'+lineCol+'" font-size="8" text-anchor="end" font-family="JetBrains Mono,monospace" font-weight="600">$'+Math.round(lastV/1000*10)/10+'k</text>';
 
     svg+='</svg>';
 
-    // Change summary
     const change=lastV-firstV;
     const changePct=firstV>0?Math.round(Math.abs(change)/firstV*100):0;
-    const changeStr=(change<=0?'↓ Down $':'↑ Up $')+Math.abs(Math.round(change)).toLocaleString()+' ('+changePct+'%) since '+( monthly[chartKeys[0]]?monthly[chartKeys[0]].label:chartKeys[0]);
 
-    html+='<div class="shd" style="margin-top:0">Total Debt Trajectory</div>';
+    html+='<div class="shd" style="margin-top:0">Debt Trajectory</div>';
     html+='<div class="card card-sm" style="margin-bottom:10px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">';
-    html+='<div><div style="font-size:20px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--red)">$'+Math.round(totalNow).toLocaleString()+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">total debt today</div></div>';
-    html+='<div style="font-size:12px;font-weight:600;color:'+(change<=0?'var(--green)':'var(--red)')+'">'+changeStr+'</div>';
+    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">';
+    html+='<div><div style="font-size:20px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--red)">$'+Math.round(totalNow).toLocaleString()+'</div><div style="font-size:11px;color:var(--text3);margin-top:1px">total today · '+n+' data points</div></div>';
+    html+='<div style="font-size:12px;font-weight:600;color:'+(change<=0?'var(--green)':'var(--red)')+'">'+( change<=0?'↓':' ↑')+'$'+Math.round(Math.abs(change)).toLocaleString()+' ('+changePct+'%)</div>';
     html+='</div>';
     html+=svg;
-    html+='<div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:center">Reconstructed from your payment and spending history</div>';
     html+='</div>';
   }
 
   // ── UTILIZATION ──
+  html+='<div class="card card-sm" style="margin-bottom:10px">';  // ── UTILIZATION ──
   html+='<div class="card card-sm" style="margin-bottom:10px">';
   html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">';
   html+='<div class="shd" style="margin:0">Credit Utilization</div>';
