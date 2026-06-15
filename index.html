@@ -1165,6 +1165,117 @@ function renderTrends(){
     html+='</div>';
   }
 
+  // ── DEBT TRAJECTORY CHART ──
+  // Reconstruct running total debt per month by working backward from today
+  // Start at totalNow and apply net changes in reverse
+  const debtByMonth={};
+  debtByMonth[thisKey]=totalNow;
+  const sortedKeys=[...keys].sort();
+  // Walk backward from most recent month to earliest
+  // Each month: debtPrev = debtCurrent - payments + creditSpent
+  for(let i=sortedKeys.length-1;i>=0;i--){
+    const k=sortedKeys[i];
+    const m=monthly[k]||{paid:0,creditSpent:0};
+    const net=m.paid-(m.creditSpent||0);
+    // previous month's end balance = this month's start = this month's end - net change
+    if(i>0){
+      const prevKey=sortedKeys[i-1];
+      const thisBalance=debtByMonth[k]||totalNow;
+      debtByMonth[prevKey]=Math.max(0,thisBalance+net);
+    }
+  }
+  // Ensure current month is always totalNow
+  debtByMonth[thisKey]=totalNow;
+
+  const chartKeys=Object.keys(debtByMonth).sort();
+  const chartVals=chartKeys.map(k=>debtByMonth[k]);
+  const maxD=Math.max(...chartVals,totalNow,1);
+  const minD=Math.max(0,Math.min(...chartVals)*0.85);
+  const range=maxD-minD||1;
+
+  if(chartKeys.length>=2){
+    const W=340,H=130,PL=52,PR=12,PT=16,PB=28;
+    const cW=W-PL-PR,cH=H-PT-PB;
+    const n=chartKeys.length;
+
+    // Point coords
+    const pts=chartKeys.map((k,i)=>{
+      const x=PL+(i/(n-1))*cW;
+      const y=PT+cH*(1-(debtByMonth[k]-minD)/range);
+      return{x,y,k,v:debtByMonth[k]};
+    });
+
+    // Build smooth path
+    function cx(i){return pts[i].x;}
+    function cy(i){return pts[i].y;}
+    let path='M '+cx(0)+' '+cy(0);
+    for(let i=1;i<pts.length;i++){
+      const cpx=(cx(i-1)+cx(i))/2;
+      path+=' C '+cpx+' '+cy(i-1)+' '+cpx+' '+cy(i)+' '+cx(i)+' '+cy(i);
+    }
+    const areaPath=path+' L '+cx(pts.length-1)+' '+(PT+cH)+' L '+cx(0)+' '+(PT+cH)+' Z';
+
+    // Going up or down overall?
+    const firstV=chartVals[0],lastV=chartVals[chartVals.length-1];
+    const overallDown=lastV<=firstV;
+    const lineColor=overallDown?'#34d399':'#f87171';
+    const areaColor=overallDown?'rgba(52,211,153,0.12)':'rgba(248,113,113,0.12)';
+
+    // Y axis labels
+    const yLabels=[0,.25,.5,.75,1].map(p=>{
+      const val=minD+range*p;
+      const y=PT+cH*(1-p);
+      return{val,y};
+    });
+
+    let svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;overflow:visible">';
+
+    // Grid lines
+    yLabels.forEach(({val,y})=>{
+      svg+='<line x1="'+PL+'" y1="'+y+'" x2="'+(W-PR)+'" y2="'+y+'" stroke="#2c2c3a" stroke-width="1" stroke-dasharray="3,3"/>';
+      svg+='<text x="'+(PL-4)+'" y="'+(y+4)+'" fill="#5a5a78" font-size="9" text-anchor="end" font-family="JetBrains Mono,monospace">$'+Math.round(val/1000)+'k</text>';
+    });
+
+    // Area fill
+    svg+='<path d="'+areaPath+'" fill="'+areaColor+'"/>';
+    // Line
+    svg+='<path d="'+path+'" fill="none" stroke="'+lineColor+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+
+    // Dots + month labels
+    pts.forEach(({x,y,k,v},i)=>{
+      // Only show label for first, last, and every other in between if space
+      const showLabel=n<=6||(i===0||i===n-1||i%2===0);
+      svg+='<circle cx="'+x+'" cy="'+y+'" r="3.5" fill="'+lineColor+'" stroke="var(--card,#1e1e27)" stroke-width="1.5"/>';
+      if(showLabel){
+        const label=monthly[k]?monthly[k].label:new Date(parseInt(k.split('-')[0]),parseInt(k.split('-')[1])-1,1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+        svg+='<text x="'+x+'" y="'+(H-6)+'" fill="#5a5a78" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">'+label+'</text>';
+      }
+      // Value tooltip on first and last
+      if(i===0||i===n-1){
+        const anchor=i===0?'start':'end';
+        const xOff=i===0?4:-4;
+        svg+='<text x="'+(x+xOff)+'" y="'+(y-8)+'" fill="'+lineColor+'" font-size="9" text-anchor="'+anchor+'" font-family="JetBrains Mono,monospace" font-weight="600">$'+Math.round(v/1000*10)/10+'k</text>';
+      }
+    });
+
+    svg+='</svg>';
+
+    // Change summary
+    const change=lastV-firstV;
+    const changePct=firstV>0?Math.round(Math.abs(change)/firstV*100):0;
+    const changeStr=(change<=0?'↓ Down $':'↑ Up $')+Math.abs(Math.round(change)).toLocaleString()+' ('+changePct+'%) since '+( monthly[chartKeys[0]]?monthly[chartKeys[0]].label:chartKeys[0]);
+
+    html+='<div class="shd" style="margin-top:0">Total Debt Trajectory</div>';
+    html+='<div class="card card-sm" style="margin-bottom:10px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">';
+    html+='<div><div style="font-size:26px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--red)">$'+Math.round(totalNow).toLocaleString()+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">total debt today</div></div>';
+    html+='<div style="font-size:12px;font-weight:600;color:'+(change<=0?'var(--green)':'var(--red)')+'">'+changeStr+'</div>';
+    html+='</div>';
+    html+=svg;
+    html+='<div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:center">Reconstructed from your payment and spending history</div>';
+    html+='</div>';
+  }
+
   // ── UTILIZATION ──
   html+='<div class="card card-sm" style="margin-bottom:10px">';
   html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">';
