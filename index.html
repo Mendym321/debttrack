@@ -1194,7 +1194,7 @@ function renderTrends(){
   const range=maxD-minD||1;
 
   if(chartKeys.length>=2){
-    const W=340,H=130,PL=52,PR=12,PT=16,PB=28;
+    const W=300,H=90,PL=40,PR=8,PT=10,PB=22;
     const cW=W-PL-PR,cH=H-PT-PB;
     const n=chartKeys.length;
 
@@ -1233,7 +1233,7 @@ function renderTrends(){
     // Grid lines
     yLabels.forEach(({val,y})=>{
       svg+='<line x1="'+PL+'" y1="'+y+'" x2="'+(W-PR)+'" y2="'+y+'" stroke="#2c2c3a" stroke-width="1" stroke-dasharray="3,3"/>';
-      svg+='<text x="'+(PL-4)+'" y="'+(y+4)+'" fill="#5a5a78" font-size="9" text-anchor="end" font-family="JetBrains Mono,monospace">$'+Math.round(val/1000)+'k</text>';
+      svg+='<text x="'+(PL-4)+'" y="'+(y+4)+'" fill="#5a5a78" font-size="8" text-anchor="end" font-family="JetBrains Mono,monospace">$'+Math.round(val/1000)+'k</text>';
     });
 
     // Area fill
@@ -1248,7 +1248,7 @@ function renderTrends(){
       svg+='<circle cx="'+x+'" cy="'+y+'" r="3.5" fill="'+lineColor+'" stroke="var(--card,#1e1e27)" stroke-width="1.5"/>';
       if(showLabel){
         const label=monthly[k]?monthly[k].label:new Date(parseInt(k.split('-')[0]),parseInt(k.split('-')[1])-1,1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
-        svg+='<text x="'+x+'" y="'+(H-6)+'" fill="#5a5a78" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">'+label+'</text>';
+        svg+='<text x="'+x+'" y="'+(H-6)+'" fill="#5a5a78" font-size="8" text-anchor="middle" font-family="JetBrains Mono,monospace">'+label+'</text>';
       }
       // Value tooltip on first and last
       if(i===0||i===n-1){
@@ -1268,7 +1268,7 @@ function renderTrends(){
     html+='<div class="shd" style="margin-top:0">Total Debt Trajectory</div>';
     html+='<div class="card card-sm" style="margin-bottom:10px">';
     html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">';
-    html+='<div><div style="font-size:26px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--red)">$'+Math.round(totalNow).toLocaleString()+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">total debt today</div></div>';
+    html+='<div><div style="font-size:20px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--red)">$'+Math.round(totalNow).toLocaleString()+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">total debt today</div></div>';
     html+='<div style="font-size:12px;font-weight:600;color:'+(change<=0?'var(--green)':'var(--red)')+'">'+changeStr+'</div>';
     html+='</div>';
     html+=svg;
